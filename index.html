@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Daily Routine & Todo</title>
+  <title>클라우드 루틴 & 캘린더 트래커</title>
   <style>
     :root {
       --bg: #f8fafc;
@@ -13,7 +13,6 @@
       --primary: #2563eb;
       --primary-light: #eff6ff;
       --border: #e2e8f0;
-      --success: #10b981;
       --danger: #ef4444;
     }
     * { box-sizing: border-box; }
@@ -34,11 +33,8 @@
       flex-direction: column;
       gap: 18px;
     }
-
-    /* 탭 화면 전환 */
     .tab-view { display: none; }
     .tab-view.active { display: flex; flex-direction: column; gap: 16px; }
-
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -46,12 +42,12 @@
       padding: 18px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.03);
     }
-
-    /* 헤더 및 진행률 */
-    .header-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 12px;
+    .header-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; }
+    .sync-badge {
+      font-size: 0.75rem;
+      color: #10b981;
+      font-weight: 600;
+      margin-left: 8px;
     }
     .progress-meta {
       display: flex;
@@ -72,8 +68,6 @@
       width: 0%;
       transition: width 0.3s ease;
     }
-
-    /* 할 일 리스트 */
     .section-title {
       font-size: 0.95rem;
       font-weight: 700;
@@ -102,19 +96,9 @@
       user-select: none;
       background: #fff;
     }
-    .todo-item.done {
-      background: #f8fafc;
-      opacity: 0.6;
-    }
-    .todo-item.done .todo-text {
-      text-decoration: line-through;
-      color: var(--sub);
-    }
-    .item-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .todo-item.done { background: #f8fafc; opacity: 0.6; }
+    .todo-item.done .todo-text { text-decoration: line-through; color: var(--sub); }
+    .item-left { display: flex; align-items: center; gap: 10px; }
     .check-circle {
       width: 20px;
       height: 20px;
@@ -140,13 +124,7 @@
       padding: 0 4px;
     }
     .del-btn:hover { color: var(--danger); }
-
-    /* 입력 폼 */
-    .input-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-    }
+    .input-row { display: flex; gap: 8px; margin-top: 10px; }
     input[type="text"] {
       flex: 1;
       padding: 10px 14px;
@@ -165,13 +143,7 @@
       font-weight: 600;
       cursor: pointer;
     }
-
-    /* 요일 칩 선택기 */
-    .day-selector {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 8px;
-    }
+    .day-selector { display: flex; gap: 4px; margin-bottom: 8px; }
     .day-chip {
       flex: 1;
       padding: 6px 0;
@@ -183,23 +155,9 @@
       cursor: pointer;
       font-weight: 600;
     }
-    .day-chip.active {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
-
-    /* 주간 루틴 매트릭스 표 */
-    .table-container {
-      overflow-x: auto;
-      margin-top: 8px;
-    }
-    .week-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-      text-align: center;
-    }
+    .day-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .table-container { overflow-x: auto; margin-top: 8px; }
+    .week-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: center; }
     .week-table th {
       padding: 8px 4px;
       background: var(--primary-light);
@@ -221,26 +179,9 @@
       margin: 2px 0;
       font-size: 0.72rem;
     }
-
-    /* 캘린더 */
-    .cal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      text-align: center;
-    }
-    .cal-label {
-      font-size: 0.78rem;
-      color: var(--sub);
-      font-weight: 600;
-      padding-bottom: 4px;
-    }
+    .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+    .cal-label { font-size: 0.78rem; color: var(--sub); font-weight: 600; padding-bottom: 4px; }
     .cal-cell {
       min-height: 52px;
       border-radius: 8px;
@@ -262,7 +203,6 @@
     .lvl-perfect { background: #22c55e; color: #fff; }
     .lvl-perfect .cal-cell-rate { color: #fff; }
 
-    /* 하단 네비게이션 바 */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -298,10 +238,13 @@
 <body>
 
   <div class="app-container">
-    <!-- 1. 할 일 탭 화면 -->
+    <!-- 할 일 탭 -->
     <div class="tab-view active" id="tabTodos">
       <div class="card">
-        <div class="header-title" id="todayHeader">오늘의 루틴 & 할 일</div>
+        <div class="header-title">
+          <span id="todayHeader">오늘의 루틴 & 할 일</span>
+          <span class="sync-badge" id="syncStatus">● 클라우드 동기화 중</span>
+        </div>
         <div class="progress-meta">
           <span>오늘 전체 달성률</span>
           <span id="rateLabel">0%</span>
@@ -311,7 +254,7 @@
         </div>
       </div>
 
-      <!-- 오늘 요일 루틴 -->
+      <!-- 요일 루틴 -->
       <div class="card">
         <div class="section-title">
           <span>🔄 오늘의 고정 루틴</span>
@@ -320,7 +263,7 @@
         <ul class="todo-list" id="routineTodoList"></ul>
       </div>
 
-      <!-- 당일 할 일 (단발성) -->
+      <!-- 당일 할 일 -->
       <div class="card">
         <div class="section-title">📌 당일 해야 할 일</div>
         <ul class="todo-list" id="dailyTodoList"></ul>
@@ -330,7 +273,7 @@
         </form>
       </div>
 
-      <!-- 일주일 요일별 루틴 관리 및 표 -->
+      <!-- 주간 루틴 표 & 등록 -->
       <div class="card">
         <div class="section-title">📅 주간 요일별 루틴 표</div>
         <div class="table-container">
@@ -364,7 +307,7 @@
       </div>
     </div>
 
-    <!-- 2. 캘린더 탭 화면 -->
+    <!-- 캘린더 탭 -->
     <div class="tab-view" id="tabCalendar">
       <div class="card">
         <div class="cal-header">
@@ -377,7 +320,6 @@
     </div>
   </div>
 
-  <!-- 하단 네비게이션 바 -->
   <nav class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('todos')" id="navTodos">
       <div class="nav-icon">✓</div>
@@ -389,26 +331,35 @@
     </div>
   </nav>
 
-  <script>
+  <!-- Firebase SDK 모듈 로드 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // 🔴 여기에 본인의 Firebase 콘솔 설정값을 붙여넣으세요 🔴
+    const firebaseConfig = {
+  apiKey: "AIzaSyAQ5MamcbSRdxtI1O2eHE848IzuuEwcOEM",
+  authDomain: "my-routine-239cb.firebaseapp.com",
+  projectId: "my-routine-239cb",
+  storageBucket: "my-routine-239cb.firebasestorage.app",
+  messagingSenderId: "52295220382",
+  appId: "1:52295220382:web:46724e3dcce280f97d4f8f"
+};
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const docRef = doc(db, "routine_app", "main_data");
+
     const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
     const today = new Date();
     const todayKey = getFormattedDate(today);
 
-    // 저장소 구조:
-    // 1. routineTemplates: [{ id, text, days: ['all' | 0~6] }]
-    // 2. dailyRecords: { 'YYYY-MM-DD': { routineDone: { id: bool }, oneOffTasks: [{ id, text, done }] } }
-    let routineTemplates = JSON.parse(localStorage.getItem('routine_templates')) || [
+    let routineTemplates = [
       { id: 1, text: '기상 직후 물 마시기', days: ['all'] },
       { id: 2, text: '스트레칭 10분', days: [1, 2, 3, 4, 5] },
       { id: 3, text: '주말 산책', days: [0, 6] }
     ];
-
-    let historyRecords = JSON.parse(localStorage.getItem('history_records')) || {};
-
-    if (!historyRecords[todayKey]) {
-      historyRecords[todayKey] = { routineDone: {}, oneOffTasks: [] };
-    }
-
+    let historyRecords = {};
     let calViewDate = new Date();
     let selectedRoutineDays = ['all'];
 
@@ -419,36 +370,48 @@
       return `${y}-${m}-${day}`;
     }
 
-    function saveAndSync() {
-      localStorage.setItem('routine_templates', JSON.stringify(routineTemplates));
-      localStorage.setItem('history_records', JSON.stringify(historyRecords));
+    // Firestore 실시간 리스너 (클라우드 데이터 자동 수신)
+    onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        routineTemplates = data.routineTemplates || routineTemplates;
+        historyRecords = data.historyRecords || {};
+      }
+      if (!historyRecords[todayKey]) {
+        historyRecords[todayKey] = { routineDone: {}, oneOffTasks: [] };
+      }
+      document.getElementById('syncStatus').textContent = '● 클라우드 동기화 완료';
       renderToday();
       renderMatrix();
-    }
+      renderCalendar();
+    }, (error) => {
+      console.error("Firebase Error: ", error);
+      document.getElementById('syncStatus').textContent = '⚠️ 동기화 실패 (설정 확인)';
+      document.getElementById('syncStatus').style.color = 'var(--danger)';
+    });
 
-    // 탭 전환
-    function switchTab(tab) {
-      const tabTodos = document.getElementById('tabTodos');
-      const tabCalendar = document.getElementById('tabCalendar');
-      const navTodos = document.getElementById('navTodos');
-      const navCal = document.getElementById('navCal');
-
-      if (tab === 'todos') {
-        tabTodos.classList.add('active');
-        tabCalendar.classList.remove('active');
-        navTodos.classList.add('active');
-        navCal.classList.remove('active');
-        renderToday();
-      } else {
-        tabTodos.classList.remove('active');
-        tabCalendar.classList.add('active');
-        navTodos.classList.remove('active');
-        navCal.classList.add('active');
-        renderCalendar();
+    // Firestore 업로드
+    async function syncToFirebase() {
+      document.getElementById('syncStatus').textContent = '● 저장 중...';
+      try {
+        await setDoc(docRef, {
+          routineTemplates,
+          historyRecords
+        });
+      } catch (e) {
+        console.error("Save Error: ", e);
       }
     }
 
-    // 요일 선택 칩 바인딩
+    window.switchTab = function(tab) {
+      document.getElementById('tabTodos').classList.toggle('active', tab === 'todos');
+      document.getElementById('tabCalendar').classList.toggle('active', tab === 'cal');
+      document.getElementById('navTodos').classList.toggle('active', tab === 'todos');
+      document.getElementById('navCal').classList.toggle('active', tab === 'cal');
+      if (tab === 'todos') renderToday();
+      else renderCalendar();
+    };
+
     document.querySelectorAll('#daySelector .day-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const day = chip.dataset.day;
@@ -475,7 +438,6 @@
       });
     });
 
-    // 오늘 할일 렌더링
     function renderToday() {
       const dayOfWeek = today.getDay();
       document.getElementById('todayHeader').textContent = `${today.getMonth() + 1}월 ${today.getDate()}일 (${DAY_NAMES[dayOfWeek]})`;
@@ -484,7 +446,7 @@
       const todaysRoutines = routineTemplates.filter(r => r.days.includes('all') || r.days.includes(dayOfWeek));
       const record = historyRecords[todayKey] || { routineDone: {}, oneOffTasks: [] };
 
-      // 1. 고정 루틴 리스트
+      // 루틴 렌더
       const rList = document.getElementById('routineTodoList');
       rList.innerHTML = '';
       if (todaysRoutines.length === 0) {
@@ -499,24 +461,24 @@
               <div class="check-circle">${isDone ? '✓' : ''}</div>
               <span class="todo-text">${r.text}</span>
             </div>
-            <button class="del-btn" title="루틴 삭제">&times;</button>
+            <button class="del-btn">&times;</button>
           `;
           li.querySelector('.item-left').onclick = () => {
             record.routineDone[r.id] = !isDone;
-            saveAndSync();
+            syncToFirebase();
           };
           li.querySelector('.del-btn').onclick = (e) => {
             e.stopPropagation();
             if (confirm('이 반복 루틴을 삭제하시겠습니까?')) {
               routineTemplates = routineTemplates.filter(t => t.id !== r.id);
-              saveAndSync();
+              syncToFirebase();
             }
           };
           rList.appendChild(li);
         });
       }
 
-      // 2. 당일 단발성 할 일 리스트
+      // 당일 할 일 렌더
       const dList = document.getElementById('dailyTodoList');
       dList.innerHTML = '';
       if (record.oneOffTasks.length === 0) {
@@ -534,18 +496,18 @@
           `;
           li.querySelector('.item-left').onclick = () => {
             task.done = !task.done;
-            saveAndSync();
+            syncToFirebase();
           };
           li.querySelector('.del-btn').onclick = (e) => {
             e.stopPropagation();
             record.oneOffTasks = record.oneOffTasks.filter(t => t.id !== task.id);
-            saveAndSync();
+            syncToFirebase();
           };
           dList.appendChild(li);
         });
       }
 
-      // 3. 달성률 계산
+      // 달성률
       const totalItems = todaysRoutines.length + record.oneOffTasks.length;
       const routineDoneCount = todaysRoutines.filter(r => record.routineDone[r.id]).length;
       const oneOffDoneCount = record.oneOffTasks.filter(t => t.done).length;
@@ -556,12 +518,10 @@
       document.getElementById('rateLabel').textContent = `${rate}% (${doneTotal}/${totalItems})`;
     }
 
-    // 요일 루틴 표 매트릭스
     function renderMatrix() {
       const tbody = document.getElementById('weekMatrixBody');
       tbody.innerHTML = '';
       const row = document.createElement('tr');
-      // 월(1)부터 일(0) 순서
       const order = [1, 2, 3, 4, 5, 6, 0];
 
       order.forEach(dayIndex => {
@@ -582,7 +542,6 @@
       tbody.appendChild(row);
     }
 
-    // 캘린더 화면
     function renderCalendar() {
       const year = calViewDate.getFullYear();
       const month = calViewDate.getMonth();
@@ -614,7 +573,6 @@
         cell.className = 'cal-cell';
         if (dKey === todayKey) cell.classList.add('today');
 
-        // 과거 날짜 또는 오늘 달성률 계산
         const record = historyRecords[dKey];
         const dayRoutines = routineTemplates.filter(r => r.days.includes('all') || r.days.includes(dayOfWeek));
         let totalCount = dayRoutines.length + (record ? record.oneOffTasks.length : 0);
@@ -643,20 +601,20 @@
       }
     }
 
-    function changeMonth(delta) {
+    window.changeMonth = function(delta) {
       calViewDate.setMonth(calViewDate.getMonth() + delta);
       renderCalendar();
-    }
+    };
 
-    // 폼 이벤트 핸들러
     document.getElementById('addDailyForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const input = document.getElementById('dailyInput');
       const text = input.value.trim();
       if (!text) return;
+      if (!historyRecords[todayKey]) historyRecords[todayKey] = { routineDone: {}, oneOffTasks: [] };
       historyRecords[todayKey].oneOffTasks.push({ id: Date.now(), text, done: false });
       input.value = '';
-      saveAndSync();
+      syncToFirebase();
     });
 
     document.getElementById('addRoutineForm').addEventListener('submit', (e) => {
@@ -666,12 +624,8 @@
       if (!text) return;
       routineTemplates.push({ id: Date.now(), text, days: [...selectedRoutineDays] });
       input.value = '';
-      saveAndSync();
+      syncToFirebase();
     });
-
-    // 시작
-    renderToday();
-    renderMatrix();
   </script>
 </body>
 </html>
