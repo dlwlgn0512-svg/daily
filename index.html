@@ -4,27 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>클라우드 루틴 & 캘린더 트래커</title>
+
+  <!-- Pretendard 웹폰트 로드 -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
   <style>
     :root {
       --bg: #f8fafc;
       --card: #ffffff;
       --text: #0f172a;
       --sub: #64748b;
-      --primary: #2563eb;
+      --primary: #3b82f6;
+      --primary-dark: #1d4ed8;
       --primary-light: #eff6ff;
       --border: #e2e8f0;
+      --border-light: #f1f5f9;
       --danger: #ef4444;
-      --timeline-line: #cbd5e1;
+      --slot-hover: #f1f5f9;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       padding: 0 0 80px 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif;
+      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
       background: var(--bg);
       color: var(--text);
       display: flex;
       justify-content: center;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     .app-container {
       width: 100%;
@@ -32,48 +40,97 @@
       padding: 20px 16px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
     .tab-view { display: none; }
     .tab-view.active { display: flex; flex-direction: column; gap: 16px; }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 18px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+      border-radius: 18px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.05);
     }
-    .header-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; }
+    
+    /* 최상단 날짜 헤더 */
+    .top-date-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+    }
+    .today-main-date {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
     .sync-badge {
       font-size: 0.75rem;
       color: #10b981;
       font-weight: 600;
-      margin-left: 8px;
+      background: #ecfdf5;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid #a7f3d0;
+    }
+
+    /* 달성률 프로그레스 바 카드 */
+    .progress-box {
+      background: linear-gradient(145deg, #ffffff, #f8fafc);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 18px;
     }
     .progress-meta {
       display: flex;
       justify-content: space-between;
-      font-size: 0.85rem;
+      align-items: flex-end;
+      margin-bottom: 12px;
+    }
+    .progress-label-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .progress-sub-text {
+      font-size: 0.78rem;
+      color: var(--sub);
+      font-weight: 500;
+    }
+    .progress-count-text {
+      font-size: 0.9rem;
       font-weight: 600;
-      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .progress-percent-badge {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.02em;
     }
     .progress-track {
-      background: var(--border);
-      height: 8px;
+      background: #e2e8f0;
+      height: 12px;
       border-radius: 999px;
       overflow: hidden;
+      padding: 2px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
     }
     .progress-bar {
-      background: var(--primary);
+      background: linear-gradient(90deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
       height: 100%;
       width: 0%;
-      transition: width 0.3s ease;
+      border-radius: 999px;
+      transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
     }
+
     .section-title {
       font-size: 0.95rem;
       font-weight: 700;
-      margin: 12px 0 8px;
-      color: var(--sub);
+      margin: 0 0 10px;
+      color: var(--text);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -96,22 +153,25 @@
       cursor: pointer;
       user-select: none;
       background: #fff;
+      transition: all 0.2s ease;
     }
+    .todo-item:hover { border-color: #cbd5e1; }
     .todo-item.done { background: #f8fafc; opacity: 0.75; }
     .todo-item.done .todo-text { text-decoration: line-through; color: var(--sub); }
     .item-left { display: flex; align-items: center; gap: 10px; flex: 1; }
     .check-circle {
-      width: 20px;
-      height: 20px;
-      border: 2px solid var(--border);
-      border-radius: 6px;
+      width: 22px;
+      height: 22px;
+      border: 2px solid #cbd5e1;
+      border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 11px;
       color: #fff;
-      font-weight: bold;
+      font-weight: 700;
       flex-shrink: 0;
+      transition: all 0.2s;
     }
     .todo-item.done .check-circle {
       background: var(--primary);
@@ -119,9 +179,9 @@
     }
     .time-badge {
       font-size: 0.72rem;
-      color: var(--primary);
+      color: var(--primary-dark);
       background: var(--primary-light);
-      padding: 2px 6px;
+      padding: 3px 8px;
       border-radius: 6px;
       font-weight: 600;
       margin-left: 6px;
@@ -130,10 +190,11 @@
     .del-btn {
       background: none;
       border: none;
-      color: var(--sub);
-      font-size: 1.1rem;
+      color: #94a3b8;
+      font-size: 1.2rem;
       cursor: pointer;
       padding: 0 4px;
+      line-height: 1;
     }
     .del-btn:hover { color: var(--danger); }
     .input-row { display: flex; gap: 8px; margin-top: 10px; }
@@ -143,6 +204,7 @@
       border-radius: 10px;
       outline: none;
       font-size: 0.9rem;
+      font-family: inherit;
     }
     input[type="text"] { flex: 1; }
     input[type="text"]:focus, input[type="time"]:focus { border-color: var(--primary); }
@@ -153,9 +215,12 @@
       padding: 0 16px;
       border-radius: 10px;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
       white-space: nowrap;
+      transition: background 0.2s;
     }
+    .btn-action:hover { background: var(--primary-dark); }
     .day-selector { display: flex; gap: 4px; margin-bottom: 8px; }
     .day-chip {
       flex: 1;
@@ -169,13 +234,14 @@
       font-weight: 600;
     }
     .day-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .table-container { overflow-x: auto; margin-top: 8px; }
+    .table-container { overflow-x: auto; margin-top: 8px; border-radius: 10px; }
     .week-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: center; }
     .week-table th {
       padding: 8px 4px;
       background: var(--primary-light);
-      color: var(--primary);
+      color: var(--primary-dark);
       border: 1px solid var(--border);
+      font-weight: 600;
     }
     .week-table td {
       padding: 8px 4px;
@@ -193,61 +259,113 @@
       font-size: 0.72rem;
     }
 
-    /* 타임테이블 UI */
-    .timeline {
-      position: relative;
+    /* 루틴 템플릿 관리 목록 */
+    .template-manager {
       margin-top: 14px;
-      padding-left: 20px;
-      border-left: 2px solid var(--timeline-line);
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .template-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0 0;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 6px;
     }
-    .timeline-node {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .timeline-node::before {
-      content: '';
-      position: absolute;
-      left: -27px;
-      top: 4px;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--primary);
-      border: 2px solid #fff;
-    }
-    .timeline-header {
+    .template-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-    }
-    .timeline-time {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--primary);
-    }
-    .timeline-content {
-      font-size: 0.9rem;
-      color: var(--text);
+      padding: 6px 10px;
       background: #f8fafc;
-      padding: 8px 12px;
-      border-radius: 8px;
       border: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      border-radius: 8px;
+      font-size: 0.82rem;
     }
-    .timeline-tag {
-      font-size: 0.7rem;
+    .btn-del-sm {
+      background: #fee2e2;
+      color: var(--danger);
+      border: none;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-del-sm:hover { background: #fecaca; }
+
+    /* 플래너 타임테이블 */
+    .timetable-wrapper {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .timetable-row {
+      display: flex;
+      border-bottom: 1px solid var(--border-light);
+      min-height: 52px;
+    }
+    .timetable-row:last-child { border-bottom: none; }
+    .time-axis {
+      width: 64px;
+      background: #f8fafc;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
       color: var(--sub);
-      background: #e2e8f0;
-      padding: 1px 5px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .time-slots {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .slot-20 {
+      flex: 1;
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      padding: 2px 8px;
+      font-size: 0.78rem;
+      border-bottom: 1px dashed var(--border-light);
+      position: relative;
+      cursor: pointer;
+    }
+    .slot-20:last-child { border-bottom: none; }
+    .slot-20:hover { background-color: var(--slot-hover); }
+    .slot-min-label {
+      width: 28px;
+      font-size: 0.68rem;
+      color: #94a3b8;
+      font-weight: 600;
+      user-select: none;
+    }
+    .slot-entry-box {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      background: #eff6ff;
+      border-left: 3px solid var(--primary);
+      padding: 3px 8px;
       border-radius: 4px;
-      margin-left: 6px;
+      margin: 1px 0;
+    }
+    .slot-entry-text {
+      color: var(--text);
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* 캘린더 */
@@ -314,9 +432,16 @@
     
     <!-- 1. 할 일 탭 -->
     <div class="tab-view active" id="tabTodos">
-      <!-- 주간 루틴 표 & 등록 (상단 배치) -->
+      
+      <!-- [1] 날짜 & 동기화 상태 헤더 -->
+      <div class="card top-date-card">
+        <span class="today-main-date" id="todayHeader">오늘의 날짜</span>
+        <span class="sync-badge" id="syncStatus">● 동기화 중</span>
+      </div>
+
+      <!-- [2] 주간 요일별 루틴 표 & 등록 / 삭제 관리 -->
       <div class="card">
-        <div class="section-title" style="margin-top: 0;">📅 주간 요일별 루틴 표</div>
+        <div class="section-title">📅 주간 요일별 루틴 표</div>
         <div class="table-container">
           <table class="week-table">
             <thead>
@@ -328,6 +453,7 @@
           </table>
         </div>
 
+        <!-- 루틴 등록 폼 -->
         <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
           <span style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">새 요일 루틴 등록</span>
           <div class="day-selector" id="daySelector">
@@ -345,56 +471,66 @@
             <button type="submit" class="btn-action">등록</button>
           </form>
         </div>
-      </div>
 
-      <!-- 오늘 달성률 & 헤더 -->
-      <div class="card">
-        <div class="header-title">
-          <span id="todayHeader">오늘의 루틴 & 할 일</span>
-          <span class="sync-badge" id="syncStatus">● 클라우드 동기화 중</span>
-        </div>
-        <div class="progress-meta">
-          <span>오늘 전체 달성률</span>
-          <span id="rateLabel">0%</span>
-        </div>
-        <div class="progress-track">
-          <div class="progress-bar" id="rateBar"></div>
+        <!-- 루틴 목록 및 삭제 관리 UI -->
+        <div class="template-manager">
+          <span style="font-size: 0.85rem; font-weight: 600; color: var(--sub); display: block;">등록된 루틴 관리 (삭제)</span>
+          <ul class="template-list" id="templateList"></ul>
         </div>
       </div>
 
-      <!-- 오늘의 고정 루틴 -->
+      <!-- [3] 오늘의 고정 루틴 -->
       <div class="card">
-        <div class="section-title" style="margin-top: 0;">
+        <div class="section-title">
           <span>🔄 오늘의 고정 루틴</span>
-          <span id="currentDayOfWeek" style="font-size: 0.8rem; font-weight: normal;"></span>
+          <span id="currentDayOfWeek" style="font-size: 0.8rem; font-weight: normal; color: var(--sub);"></span>
         </div>
         <ul class="todo-list" id="routineTodoList"></ul>
       </div>
 
-      <!-- 당일 할 일 -->
+      <!-- [4] 전체 달성률 -->
       <div class="card">
-        <div class="section-title" style="margin-top: 0;">📌 당일 해야 할 일</div>
+        <div class="progress-box">
+          <div class="progress-meta">
+            <div class="progress-label-wrap">
+              <span class="progress-sub-text">오늘의 전체 달성률</span>
+              <span class="progress-count-text" id="taskCountLabel">0 / 0 완료</span>
+            </div>
+            <div class="progress-percent-badge" id="rateLabel">0%</div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar" id="rateBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- [5] 당일 해야 할 일 -->
+      <div class="card">
+        <div class="section-title">📌 당일 해야 할 일</div>
         <ul class="todo-list" id="dailyTodoList"></ul>
         <form class="input-row" id="addDailyForm">
           <input type="text" id="dailyInput" placeholder="오늘 끝낼 할 일 입력..." autocomplete="off" />
           <button type="submit" class="btn-action">추가</button>
         </form>
       </div>
+
     </div>
 
-    <!-- 2. 오늘의 기록 탭 (타임테이블) -->
+    <!-- 2. 오늘의 기록 탭 (플래너형 타임테이블) -->
     <div class="tab-view" id="tabRecord">
       <div class="card">
-        <div class="header-title">⏱️ 오늘의 타임테이블 기록</div>
-        <span style="font-size: 0.82rem; color: var(--sub);">루틴 완료 시 20분 단위로 반올림 기록되며, 직접 활동을 입력할 수도 있습니다.</span>
+        <div class="section-title">⏱️ 오늘의 타임테이블</div>
+        <span style="font-size: 0.82rem; color: var(--sub);">
+          체크 완료 시 20분 단위로 자동 배치되며, 빈 칸을 눌러 직접 기록할 수도 있습니다.
+        </span>
         
         <form class="input-row" id="addTimelineForm" style="margin-top: 14px;">
           <input type="time" id="customTimeInput" required />
-          <input type="text" id="customActivityInput" placeholder="활동/메모 기록..." autocomplete="off" required />
+          <input type="text" id="customActivityInput" placeholder="기록할 내용 입력..." autocomplete="off" required />
           <button type="submit" class="btn-action">기록</button>
         </form>
 
-        <div class="timeline" id="timelineContainer"></div>
+        <div class="timetable-wrapper" id="timetableGrid"></div>
       </div>
     </div>
 
@@ -465,9 +601,7 @@
       return `${y}-${m}-${day}`;
     }
 
-    // 20분 단위 반올림 시간 포맷팅 함수
-    // 0~9분 -> 00분 / 10~29분 -> 20분 / 30~49분 -> 40분 / 50~59분 -> 다음 시간 00분
-    function getRounded20MinTimeStr(dateObj = new Date()) {
+    function getRoundedSlotKey(dateObj = new Date()) {
       let hours = dateObj.getHours();
       let minutes = dateObj.getMinutes();
 
@@ -476,12 +610,15 @@
         hours = (hours + 1) % 24;
         roundedMinutes = 0;
       }
+      return `${String(hours).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`;
+    }
 
+    function formatDisplayTime(slotKey) {
+      const [hStr, mStr] = slotKey.split(':');
+      let hours = parseInt(hStr);
       const ampm = hours >= 12 ? '오후' : '오전';
       const displayHour = hours % 12 === 0 ? 12 : hours % 12;
-      const displayMin = String(roundedMinutes).padStart(2, '0');
-
-      return `${ampm} ${String(displayHour).padStart(2, '0')}:${displayMin}`;
+      return `${ampm} ${displayHour}:${mStr}`;
     }
 
     function ensureTodayData() {
@@ -497,7 +634,6 @@
       if (!historyRecords[todayKey].timelineEvents) historyRecords[todayKey].timelineEvents = [];
     }
 
-    // Firestore 실시간 리스너
     onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -505,18 +641,18 @@
         historyRecords = data.historyRecords || {};
       }
       ensureTodayData();
-      document.getElementById('syncStatus').textContent = '● 클라우드 동기화 완료';
+      document.getElementById('syncStatus').textContent = '● 동기화 완료';
       renderToday();
       renderMatrix();
-      renderTimeline();
+      renderTemplateList();
+      renderTimetableGrid();
       renderCalendar();
     }, (error) => {
       console.error("Firebase Error: ", error);
-      document.getElementById('syncStatus').textContent = '⚠️ 동기화 실패 (설정 확인)';
+      document.getElementById('syncStatus').textContent = '⚠️ 동기화 실패';
       document.getElementById('syncStatus').style.color = 'var(--danger)';
     });
 
-    // Firestore 업로드
     async function syncToFirebase() {
       document.getElementById('syncStatus').textContent = '● 저장 중...';
       try {
@@ -529,7 +665,6 @@
       }
     }
 
-    // 탭 전환 핸들러
     window.switchTab = function(tab) {
       document.getElementById('tabTodos').classList.toggle('active', tab === 'todos');
       document.getElementById('tabRecord').classList.toggle('active', tab === 'record');
@@ -540,11 +675,10 @@
       document.getElementById('navCal').classList.toggle('active', tab === 'cal');
 
       if (tab === 'todos') renderToday();
-      else if (tab === 'record') renderTimeline();
+      else if (tab === 'record') renderTimetableGrid();
       else renderCalendar();
     };
 
-    // 요일 칩 선택 이벤트
     document.querySelectorAll('#daySelector .day-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const day = chip.dataset.day;
@@ -571,17 +705,53 @@
       });
     });
 
-    // 오늘 할 일 탭 렌더링
+    // 루틴 템플릿 관리 목록 렌더링
+    function renderTemplateList() {
+      const listEl = document.getElementById('templateList');
+      listEl.innerHTML = '';
+
+      if (routineTemplates.length === 0) {
+        listEl.innerHTML = `<li style="color:var(--sub);font-size:0.8rem;text-align:center;padding:6px 0;">등록된 루틴이 없습니다.</li>`;
+        return;
+      }
+
+      routineTemplates.forEach(t => {
+        const li = document.createElement('li');
+        li.className = 'template-item';
+
+        const dayTag = t.days.includes('all') 
+          ? '매일' 
+          : t.days.map(d => DAY_NAMES[d]).join(', ');
+
+        li.innerHTML = `
+          <div>
+            <strong>${t.text}</strong>
+            <span style="color:var(--sub);font-size:0.75rem;margin-left:6px;">(${dayTag})</span>
+          </div>
+          <button class="btn-del-sm">삭제</button>
+        `;
+
+        li.querySelector('.btn-del-sm').onclick = () => {
+          if (confirm(`'${t.text}' 루틴을 영구 삭제하시겠습니까?`)) {
+            routineTemplates = routineTemplates.filter(item => item.id !== t.id);
+            syncToFirebase();
+          }
+        };
+
+        listEl.appendChild(li);
+      });
+    }
+
     function renderToday() {
       ensureTodayData();
       const dayOfWeek = today.getDay();
       document.getElementById('todayHeader').textContent = `${today.getMonth() + 1}월 ${today.getDate()}일 (${DAY_NAMES[dayOfWeek]})`;
-      document.getElementById('currentDayOfWeek').textContent = `매주 ${DAY_NAMES[dayOfWeek]}요일 루틴`;
+      document.getElementById('currentDayOfWeek').textContent = `매주 ${DAY_NAMES[dayOfWeek]}요일`;
 
       const todaysRoutines = routineTemplates.filter(r => r.days.includes('all') || r.days.includes(dayOfWeek));
       const record = historyRecords[todayKey];
 
-      // 1. 루틴 리스트
+      // 고정 루틴 리스트
       const rList = document.getElementById('routineTodoList');
       rList.innerHTML = '';
       if (todaysRoutines.length === 0) {
@@ -598,18 +768,20 @@
               <span class="todo-text">${r.text}</span>
               ${isDone && timeText ? `<span class="time-badge">${timeText}</span>` : ''}
             </div>
-            <button class="del-btn">&times;</button>
+            <button class="del-btn" title="루틴 삭제">&times;</button>
           `;
           li.querySelector('.item-left').onclick = () => {
             const nextState = !isDone;
             record.routineDone[r.id] = nextState;
             if (nextState) {
-              const roundedTime = getRounded20MinTimeStr();
-              record.routineTimes[r.id] = roundedTime;
+              const slotKey = getRoundedSlotKey();
+              const displayTime = formatDisplayTime(slotKey);
+              record.routineTimes[r.id] = displayTime;
               record.timelineEvents.push({
                 id: 'rt_' + r.id + '_' + Date.now(),
-                time: roundedTime,
-                text: `[루틴 완료] ${r.text}`,
+                slot: slotKey,
+                time: displayTime,
+                text: `[루틴] ${r.text}`,
                 type: 'routine'
               });
             } else {
@@ -619,7 +791,7 @@
           };
           li.querySelector('.del-btn').onclick = (e) => {
             e.stopPropagation();
-            if (confirm('이 반복 루틴을 삭제하시겠습니까?')) {
+            if (confirm(`'${r.text}' 반복 루틴을 삭제하시겠습니까?`)) {
               routineTemplates = routineTemplates.filter(t => t.id !== r.id);
               syncToFirebase();
             }
@@ -628,7 +800,7 @@
         });
       }
 
-      // 2. 당일 할 일 리스트
+      // 당일 할 일 리스트
       const dList = document.getElementById('dailyTodoList');
       dList.innerHTML = '';
       if (record.oneOffTasks.length === 0) {
@@ -648,11 +820,13 @@
           li.querySelector('.item-left').onclick = () => {
             task.done = !task.done;
             if (task.done) {
-              task.time = getRounded20MinTimeStr();
+              const slotKey = getRoundedSlotKey();
+              task.time = formatDisplayTime(slotKey);
               record.timelineEvents.push({
                 id: 'task_' + task.id + '_' + Date.now(),
+                slot: slotKey,
                 time: task.time,
-                text: `[할일 완료] ${task.text}`,
+                text: `[할일] ${task.text}`,
                 type: 'task'
               });
             } else {
@@ -669,7 +843,7 @@
         });
       }
 
-      // 3. 달성률
+      // 달성률 계산
       const totalItems = todaysRoutines.length + record.oneOffTasks.length;
       const routineDoneCount = todaysRoutines.filter(r => record.routineDone[r.id]).length;
       const oneOffDoneCount = record.oneOffTasks.filter(t => t.done).length;
@@ -677,43 +851,89 @@
       const rate = totalItems === 0 ? 0 : Math.round((doneTotal / totalItems) * 100);
 
       document.getElementById('rateBar').style.width = rate + '%';
-      document.getElementById('rateLabel').textContent = `${rate}% (${doneTotal}/${totalItems})`;
+      document.getElementById('rateLabel').textContent = `${rate}%`;
+      document.getElementById('taskCountLabel').textContent = `${doneTotal} / ${totalItems} 완료`;
     }
 
-    // 오늘의 기록(타임테이블) 렌더링
-    function renderTimeline() {
+    function renderTimetableGrid() {
       ensureTodayData();
-      const container = document.getElementById('timelineContainer');
-      container.innerHTML = '';
+      const grid = document.getElementById('timetableGrid');
+      grid.innerHTML = '';
 
       const events = historyRecords[todayKey].timelineEvents || [];
-      if (events.length === 0) {
-        container.innerHTML = `<div style="color:var(--sub);font-size:0.85rem;padding:12px 0;">아직 기록된 타임라인이 없습니다.</div>`;
-        return;
+
+      const hourOrder = [];
+      for (let h = 3; h <= 26; h++) {
+        hourOrder.push(h % 24);
       }
 
-      events.forEach(item => {
-        const node = document.createElement('div');
-        node.className = 'timeline-node';
-        node.innerHTML = `
-          <div class="timeline-header">
-            <span class="timeline-time">${item.time}</span>
-            <button class="del-btn" style="font-size:0.9rem;" title="기록 삭제">&times;</button>
-          </div>
-          <div class="timeline-content">
-            <span>${item.text}</span>
-            <span class="timeline-tag">${item.type === 'manual' ? '직접입력' : '체크연동'}</span>
-          </div>
-        `;
-        node.querySelector('.del-btn').onclick = () => {
-          historyRecords[todayKey].timelineEvents = events.filter(e => e.id !== item.id);
-          syncToFirebase();
-        };
-        container.appendChild(node);
+      hourOrder.forEach(hour => {
+        const row = document.createElement('div');
+        row.className = 'timetable-row';
+
+        const ampm = hour >= 12 ? 'pm' : 'am';
+        const displayH = hour % 12 === 0 ? 12 : hour % 12;
+        
+        const axis = document.createElement('div');
+        axis.className = 'time-axis';
+        axis.innerHTML = `<span>${displayH}</span><span style="font-size:0.65rem;font-weight:normal;">${ampm}</span>`;
+        row.appendChild(axis);
+
+        const slotsWrapper = document.createElement('div');
+        slotsWrapper.className = 'time-slots';
+
+        [0, 20, 40].forEach(min => {
+          const slotKey = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+          const slotDiv = document.createElement('div');
+          slotDiv.className = 'slot-20';
+
+          const minLabel = document.createElement('span');
+          minLabel.className = 'slot-min-label';
+          minLabel.textContent = `:${String(min).padStart(2, '0')}`;
+          slotDiv.appendChild(minLabel);
+
+          const matchedEvents = events.filter(e => e.slot === slotKey);
+
+          if (matchedEvents.length > 0) {
+            matchedEvents.forEach(ev => {
+              const entry = document.createElement('div');
+              entry.className = 'slot-entry-box';
+              entry.innerHTML = `
+                <span class="slot-entry-text">${ev.text}</span>
+                <button class="del-btn" style="font-size:0.9rem;" title="삭제">&times;</button>
+              `;
+              entry.querySelector('.del-btn').onclick = (e) => {
+                e.stopPropagation();
+                historyRecords[todayKey].timelineEvents = events.filter(item => item.id !== ev.id);
+                syncToFirebase();
+              };
+              slotDiv.appendChild(entry);
+            });
+          }
+
+          slotDiv.addEventListener('click', (e) => {
+            if (e.target.classList.contains('del-btn')) return;
+            const content = prompt(`${formatDisplayTime(slotKey)} 에 기록할 활동을 입력하세요:`);
+            if (content && content.trim()) {
+              historyRecords[todayKey].timelineEvents.push({
+                id: 'click_' + Date.now(),
+                slot: slotKey,
+                time: formatDisplayTime(slotKey),
+                text: content.trim(),
+                type: 'manual'
+              });
+              syncToFirebase();
+            }
+          });
+
+          slotsWrapper.appendChild(slotDiv);
+        });
+
+        row.appendChild(slotsWrapper);
+        grid.appendChild(row);
       });
     }
 
-    // 타임라인 수동 추가
     document.getElementById('addTimelineForm').addEventListener('submit', (e) => {
       e.preventDefault();
       ensureTodayData();
@@ -725,10 +945,12 @@
       const tempDate = new Date();
       tempDate.setHours(parseInt(h), parseInt(m), 0, 0);
 
-      const displayTime = getRounded20MinTimeStr(tempDate);
+      const slotKey = getRoundedSlotKey(tempDate);
+      const displayTime = formatDisplayTime(slotKey);
 
       historyRecords[todayKey].timelineEvents.push({
         id: 'manual_' + Date.now(),
+        slot: slotKey,
         time: displayTime,
         text: textInput.value.trim(),
         type: 'manual'
@@ -739,7 +961,6 @@
       syncToFirebase();
     });
 
-    // 주간 루틴 매트릭스
     function renderMatrix() {
       const tbody = document.getElementById('weekMatrixBody');
       tbody.innerHTML = '';
@@ -764,7 +985,6 @@
       tbody.appendChild(row);
     }
 
-    // 캘린더
     function renderCalendar() {
       const year = calViewDate.getFullYear();
       const month = calViewDate.getMonth();
