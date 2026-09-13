@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>클라우드 루틴 & 캘린더 트래커</title>
 
-  <!-- 한글 폰트 깨짐 방지: Pretendard & Noto Sans KR 다중 CDN 로드 -->
+  <!-- Pretendard 웹폰트 로드 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -29,15 +26,13 @@
     body {
       margin: 0;
       padding: 0 0 80px 0;
-      /* 모든 OS 환경에서 한글 글꼴 자동 맞춤 */
-      font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
       display: flex;
       justify-content: center;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      word-break: keep-all;
     }
     .app-container {
       width: 100%;
@@ -78,6 +73,58 @@
       padding: 3px 8px;
       border-radius: 999px;
       border: 1px solid #a7f3d0;
+    }
+
+    /* 🌟 글자 꺾임 방지 처리된 주간 요일별 루틴 표 */
+    .table-container {
+      overflow-x: auto;
+      margin-top: 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      -webkit-overflow-scrolling: touch;
+    }
+    .table-container::-webkit-scrollbar {
+      height: 4px;
+    }
+    .table-container::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .week-table {
+      width: 100%;
+      min-width: 440px; /* 좁은 모바일 화면에서도 칸이 찌그러지지 않는 최소 너비 */
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    .week-table th {
+      padding: 10px 4px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      width: 14.28%;
+    }
+    .week-table td {
+      padding: 8px 4px;
+      border-right: 1px solid var(--border-light);
+      vertical-align: top;
+      background: #fff;
+    }
+    .week-table td:last-child {
+      border-right: none;
+    }
+    .matrix-item {
+      display: block;
+      background: #f1f5f9;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 4px 5px;
+      margin: 3px 0;
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap; /* 👈 글자가 아래로 꺾여서 잘리는 현상 원천 차단 */
+      letter-spacing: -0.02em;
     }
 
     /* 달성률 프로그레스 바 카드 */
@@ -239,32 +286,8 @@
       font-weight: 600;
     }
     .day-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .table-container { overflow-x: auto; margin-top: 8px; border-radius: 10px; }
-    .week-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: center; }
-    .week-table th {
-      padding: 8px 4px;
-      background: var(--primary-light);
-      color: var(--primary-dark);
-      border: 1px solid var(--border);
-      font-weight: 600;
-    }
-    .week-table td {
-      padding: 8px 4px;
-      border: 1px solid var(--border);
-      vertical-align: top;
-      max-width: 60px;
-      word-break: break-all;
-    }
-    .matrix-item {
-      display: inline-block;
-      background: #f1f5f9;
-      border-radius: 4px;
-      padding: 2px 4px;
-      margin: 2px 0;
-      font-size: 0.72rem;
-    }
 
-    /* 관리 탭 리스트 UI */
+    /* 관리 탭 리스트 */
     .template-list {
       list-style: none;
       padding: 0;
@@ -394,7 +417,7 @@
     .lvl-perfect { background: #22c55e; color: #fff; }
     .lvl-perfect .cal-cell-rate { color: #fff; }
 
-    /* 하단 4단 네비게이션 */
+    /* 하단 네비게이션 */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -559,7 +582,7 @@
 
   </div>
 
-  <!-- 하단 4단 네비게이션 (깨짐 없는 SVG 아이콘) -->
+  <!-- 하단 네비게이션 -->
   <nav class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('todos')" id="navTodos">
       <svg class="nav-icon-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
