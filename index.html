@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>클라우드 루틴 & 캘린더 트래커</title>
 
-  <!-- Pretendard 웹폰트 로드 -->
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- 한글 폰트 깨짐 방지: Pretendard & Noto Sans KR 다중 CDN 로드 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -26,13 +29,15 @@
     body {
       margin: 0;
       padding: 0 0 80px 0;
-      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      /* 모든 OS 환경에서 한글 글꼴 자동 맞춤 */
+      font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
       background: var(--bg);
       color: var(--text);
       display: flex;
       justify-content: center;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      word-break: keep-all;
     }
     .app-container {
       width: 100%;
@@ -259,39 +264,35 @@
       font-size: 0.72rem;
     }
 
-    /* 루틴 템플릿 관리 목록 */
-    .template-manager {
-      margin-top: 14px;
-      border-top: 1px solid var(--border);
-      padding-top: 12px;
-    }
+    /* 관리 탭 리스트 UI */
     .template-list {
       list-style: none;
       padding: 0;
-      margin: 8px 0 0;
+      margin: 12px 0 0;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
     .template-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 6px 10px;
+      padding: 10px 14px;
       background: #f8fafc;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.82rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
     }
     .btn-del-sm {
       background: #fee2e2;
       color: var(--danger);
       border: none;
-      padding: 3px 8px;
+      padding: 4px 10px;
       border-radius: 6px;
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
+      font-family: inherit;
     }
     .btn-del-sm:hover { background: #fecaca; }
 
@@ -393,7 +394,7 @@
     .lvl-perfect { background: #22c55e; color: #fff; }
     .lvl-perfect .cal-cell-rate { color: #fff; }
 
-    /* 하단 3단 네비게이션 */
+    /* 하단 4단 네비게이션 */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -418,12 +419,20 @@
       justify-content: center;
       cursor: pointer;
       color: var(--sub);
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 600;
       gap: 3px;
     }
     .nav-item.active { color: var(--primary); }
-    .nav-icon { font-size: 1.15rem; }
+    .nav-icon-svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
   </style>
 </head>
 <body>
@@ -432,16 +441,15 @@
     
     <!-- 1. 할 일 탭 -->
     <div class="tab-view active" id="tabTodos">
-      
-      <!-- [1] 날짜 & 동기화 상태 헤더 -->
+      <!-- 날짜 헤더 -->
       <div class="card top-date-card">
         <span class="today-main-date" id="todayHeader">오늘의 날짜</span>
         <span class="sync-badge" id="syncStatus">● 동기화 중</span>
       </div>
 
-      <!-- [2] 주간 요일별 루틴 표 & 등록 / 삭제 관리 -->
+      <!-- 주간 요일별 루틴 표 -->
       <div class="card">
-        <div class="section-title">📅 주간 요일별 루틴 표</div>
+        <div class="section-title">주간 요일별 루틴 표</div>
         <div class="table-container">
           <table class="week-table">
             <thead>
@@ -452,43 +460,18 @@
             <tbody id="weekMatrixBody"></tbody>
           </table>
         </div>
-
-        <!-- 루틴 등록 폼 -->
-        <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
-          <span style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">새 요일 루틴 등록</span>
-          <div class="day-selector" id="daySelector">
-            <div class="day-chip active" data-day="all">매일</div>
-            <div class="day-chip" data-day="1">월</div>
-            <div class="day-chip" data-day="2">화</div>
-            <div class="day-chip" data-day="3">수</div>
-            <div class="day-chip" data-day="4">목</div>
-            <div class="day-chip" data-day="5">금</div>
-            <div class="day-chip" data-day="6">토</div>
-            <div class="day-chip" data-day="0">일</div>
-          </div>
-          <form class="input-row" id="addRoutineForm">
-            <input type="text" id="routineInput" placeholder="요일별 반복 루틴 이름..." autocomplete="off" />
-            <button type="submit" class="btn-action">등록</button>
-          </form>
-        </div>
-
-        <!-- 루틴 목록 및 삭제 관리 UI -->
-        <div class="template-manager">
-          <span style="font-size: 0.85rem; font-weight: 600; color: var(--sub); display: block;">등록된 루틴 관리 (삭제)</span>
-          <ul class="template-list" id="templateList"></ul>
-        </div>
       </div>
 
-      <!-- [3] 오늘의 고정 루틴 -->
+      <!-- 오늘의 고정 루틴 -->
       <div class="card">
         <div class="section-title">
-          <span>🔄 오늘의 고정 루틴</span>
+          <span>오늘의 고정 루틴</span>
           <span id="currentDayOfWeek" style="font-size: 0.8rem; font-weight: normal; color: var(--sub);"></span>
         </div>
         <ul class="todo-list" id="routineTodoList"></ul>
       </div>
 
-      <!-- [4] 전체 달성률 -->
+      <!-- 전체 달성률 -->
       <div class="card">
         <div class="progress-box">
           <div class="progress-meta">
@@ -504,22 +487,21 @@
         </div>
       </div>
 
-      <!-- [5] 당일 해야 할 일 -->
+      <!-- 당일 해야 할 일 -->
       <div class="card">
-        <div class="section-title">📌 당일 해야 할 일</div>
+        <div class="section-title">당일 해야 할 일</div>
         <ul class="todo-list" id="dailyTodoList"></ul>
         <form class="input-row" id="addDailyForm">
           <input type="text" id="dailyInput" placeholder="오늘 끝낼 할 일 입력..." autocomplete="off" />
           <button type="submit" class="btn-action">추가</button>
         </form>
       </div>
-
     </div>
 
     <!-- 2. 오늘의 기록 탭 (플래너형 타임테이블) -->
     <div class="tab-view" id="tabRecord">
       <div class="card">
-        <div class="section-title">⏱️ 오늘의 타임테이블</div>
+        <div class="section-title">오늘의 타임테이블</div>
         <span style="font-size: 0.82rem; color: var(--sub);">
           체크 완료 시 20분 단위로 자동 배치되며, 빈 칸을 눌러 직접 기록할 수도 있습니다.
         </span>
@@ -545,21 +527,55 @@
         <div class="cal-grid" id="calGrid"></div>
       </div>
     </div>
+
+    <!-- 4. 관리 탭 -->
+    <div class="tab-view" id="tabManage">
+      <!-- 새 루틴 등록 -->
+      <div class="card">
+        <div class="section-title">새 요일별 루틴 등록</div>
+        <div class="day-selector" id="daySelector">
+          <div class="day-chip active" data-day="all">매일</div>
+          <div class="day-chip" data-day="1">월</div>
+          <div class="day-chip" data-day="2">화</div>
+          <div class="day-chip" data-day="3">수</div>
+          <div class="day-chip" data-day="4">목</div>
+          <div class="day-chip" data-day="5">금</div>
+          <div class="day-chip" data-day="6">토</div>
+          <div class="day-chip" data-day="0">일</div>
+        </div>
+        <form class="input-row" id="addRoutineForm">
+          <input type="text" id="routineInput" placeholder="반복할 루틴 이름 입력..." autocomplete="off" />
+          <button type="submit" class="btn-action">등록</button>
+        </form>
+      </div>
+
+      <!-- 루틴 삭제/관리 -->
+      <div class="card">
+        <div class="section-title">등록된 루틴 관리</div>
+        <span style="font-size: 0.82rem; color: var(--sub);">삭제 시 주간 표와 모든 요일 체크리스트에서 함께 제거됩니다.</span>
+        <ul class="template-list" id="templateList"></ul>
+      </div>
+    </div>
+
   </div>
 
-  <!-- 하단 3단 네비게이션 -->
+  <!-- 하단 4단 네비게이션 (깨짐 없는 SVG 아이콘) -->
   <nav class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('todos')" id="navTodos">
-      <div class="nav-icon">✓</div>
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
       <span>할일</span>
     </div>
     <div class="nav-item" onclick="switchTab('record')" id="navRecord">
-      <div class="nav-icon">⏱️</div>
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
       <span>오늘의 기록</span>
     </div>
     <div class="nav-item" onclick="switchTab('cal')" id="navCal">
-      <div class="nav-icon">📅</div>
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
       <span>캘린더</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('manage')" id="navManage">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      <span>관리</span>
     </div>
   </nav>
 
@@ -669,14 +685,17 @@
       document.getElementById('tabTodos').classList.toggle('active', tab === 'todos');
       document.getElementById('tabRecord').classList.toggle('active', tab === 'record');
       document.getElementById('tabCalendar').classList.toggle('active', tab === 'cal');
+      document.getElementById('tabManage').classList.toggle('active', tab === 'manage');
 
       document.getElementById('navTodos').classList.toggle('active', tab === 'todos');
       document.getElementById('navRecord').classList.toggle('active', tab === 'record');
       document.getElementById('navCal').classList.toggle('active', tab === 'cal');
+      document.getElementById('navManage').classList.toggle('active', tab === 'manage');
 
       if (tab === 'todos') renderToday();
       else if (tab === 'record') renderTimetableGrid();
-      else renderCalendar();
+      else if (tab === 'cal') renderCalendar();
+      else if (tab === 'manage') renderTemplateList();
     };
 
     document.querySelectorAll('#daySelector .day-chip').forEach(chip => {
@@ -705,13 +724,12 @@
       });
     });
 
-    // 루틴 템플릿 관리 목록 렌더링
     function renderTemplateList() {
       const listEl = document.getElementById('templateList');
       listEl.innerHTML = '';
 
       if (routineTemplates.length === 0) {
-        listEl.innerHTML = `<li style="color:var(--sub);font-size:0.8rem;text-align:center;padding:6px 0;">등록된 루틴이 없습니다.</li>`;
+        listEl.innerHTML = `<li style="color:var(--sub);font-size:0.85rem;text-align:center;padding:12px 0;">등록된 고정 루틴이 없습니다.</li>`;
         return;
       }
 
@@ -732,7 +750,7 @@
         `;
 
         li.querySelector('.btn-del-sm').onclick = () => {
-          if (confirm(`'${t.text}' 루틴을 영구 삭제하시겠습니까?`)) {
+          if (confirm(`'${t.text}' 루틴을 삭제하시겠습니까?`)) {
             routineTemplates = routineTemplates.filter(item => item.id !== t.id);
             syncToFirebase();
           }
@@ -751,11 +769,10 @@
       const todaysRoutines = routineTemplates.filter(r => r.days.includes('all') || r.days.includes(dayOfWeek));
       const record = historyRecords[todayKey];
 
-      // 고정 루틴 리스트
       const rList = document.getElementById('routineTodoList');
       rList.innerHTML = '';
       if (todaysRoutines.length === 0) {
-        rList.innerHTML = `<li style="color:var(--sub);font-size:0.85rem;text-align:center;padding:10px;">등록된 오늘 루틴이 없습니다.</li>`;
+        rList.innerHTML = `<li style="color:var(--sub);font-size:0.85rem;text-align:center;padding:10px;">오늘 요일에 등록된 루틴이 없습니다.</li>`;
       } else {
         todaysRoutines.forEach(r => {
           const isDone = !!record.routineDone[r.id];
@@ -768,7 +785,6 @@
               <span class="todo-text">${r.text}</span>
               ${isDone && timeText ? `<span class="time-badge">${timeText}</span>` : ''}
             </div>
-            <button class="del-btn" title="루틴 삭제">&times;</button>
           `;
           li.querySelector('.item-left').onclick = () => {
             const nextState = !isDone;
@@ -789,18 +805,10 @@
             }
             syncToFirebase();
           };
-          li.querySelector('.del-btn').onclick = (e) => {
-            e.stopPropagation();
-            if (confirm(`'${r.text}' 반복 루틴을 삭제하시겠습니까?`)) {
-              routineTemplates = routineTemplates.filter(t => t.id !== r.id);
-              syncToFirebase();
-            }
-          };
           rList.appendChild(li);
         });
       }
 
-      // 당일 할 일 리스트
       const dList = document.getElementById('dailyTodoList');
       dList.innerHTML = '';
       if (record.oneOffTasks.length === 0) {
@@ -843,7 +851,6 @@
         });
       }
 
-      // 달성률 계산
       const totalItems = todaysRoutines.length + record.oneOffTasks.length;
       const routineDoneCount = todaysRoutines.filter(r => record.routineDone[r.id]).length;
       const oneOffDoneCount = record.oneOffTasks.filter(t => t.done).length;
@@ -1068,6 +1075,7 @@
       routineTemplates.push({ id: Date.now(), text, days: [...selectedRoutineDays] });
       input.value = '';
       syncToFirebase();
+      alert(`'${text}' 루틴이 등록되었습니다.`);
     });
   </script>
 </body>
