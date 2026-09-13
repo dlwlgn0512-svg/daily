@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>루틴 & 캘린더 트래커</title>
+  <title>Daily Routine & Todo</title>
   <style>
     :root {
       --bg: #f8fafc;
@@ -11,70 +11,58 @@
       --text: #0f172a;
       --sub: #64748b;
       --primary: #2563eb;
-      --primary-light: #dbeafe;
+      --primary-light: #eff6ff;
       --border: #e2e8f0;
       --success: #10b981;
+      --danger: #ef4444;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 24px 16px;
+      padding: 0 0 80px 0;
       font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif;
       background: var(--bg);
       color: var(--text);
       display: flex;
       justify-content: center;
     }
-    .container {
+    .app-container {
       width: 100%;
-      max-width: 520px;
+      max-width: 500px;
+      padding: 20px 16px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
     }
+
+    /* 탭 화면 전환 */
+    .tab-view { display: none; }
+    .tab-view.active { display: flex; flex-direction: column; gap: 16px; }
+
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    }
-    
-    /* 헤더 & 날짜 선택 */
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .current-date-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-    .today-badge {
-      background: var(--primary-light);
-      color: var(--primary);
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 6px;
-      cursor: pointer;
+      padding: 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
     }
 
-    /* 진행률 바 */
-    .progress-wrapper {
-      margin-top: 10px;
+    /* 헤더 및 진행률 */
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 12px;
     }
     .progress-meta {
       display: flex;
       justify-content: space-between;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 600;
       margin-bottom: 6px;
     }
     .progress-track {
       background: var(--border);
-      height: 10px;
+      height: 8px;
       border-radius: 999px;
       overflow: hidden;
     }
@@ -82,19 +70,28 @@
       background: var(--primary);
       height: 100%;
       width: 0%;
-      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: width 0.3s ease;
     }
 
-    /* 태스크 목록 */
-    .routine-list {
+    /* 할 일 리스트 */
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 12px 0 8px;
+      color: var(--sub);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .todo-list {
       list-style: none;
       padding: 0;
-      margin: 16px 0 0;
+      margin: 0;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
-    .routine-item {
+    .todo-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -103,23 +100,22 @@
       border-radius: 12px;
       cursor: pointer;
       user-select: none;
-      transition: all 0.2s;
+      background: #fff;
     }
-    .routine-item:hover { border-color: #cbd5e1; }
-    .routine-item.done {
-      background: #f1f5f9;
-      opacity: 0.7;
+    .todo-item.done {
+      background: #f8fafc;
+      opacity: 0.6;
     }
-    .routine-item.done .item-text {
+    .todo-item.done .todo-text {
       text-decoration: line-through;
       color: var(--sub);
     }
     .item-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
-    .checkbox-custom {
+    .check-circle {
       width: 20px;
       height: 20px;
       border: 2px solid var(--border);
@@ -130,71 +126,37 @@
       font-size: 11px;
       color: #fff;
       font-weight: bold;
-      transition: all 0.2s;
     }
-    .routine-item.done .checkbox-custom {
+    .todo-item.done .check-circle {
       background: var(--primary);
       border-color: var(--primary);
-    }
-    .item-tags {
-      font-size: 0.75rem;
-      color: var(--sub);
-      background: #f1f5f9;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
     }
     .del-btn {
-      background: transparent;
+      background: none;
       border: none;
       color: var(--sub);
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       cursor: pointer;
-      line-height: 1;
-      padding: 4px 6px;
+      padding: 0 4px;
     }
-    .del-btn:hover { color: #ef4444; }
+    .del-btn:hover { color: var(--danger); }
 
-    /* 요일별 루틴 등록 폼 */
-    .form-title {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-    .day-selector {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-    .day-chip {
-      padding: 6px 10px;
-      font-size: 0.8rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: #fff;
-      cursor: pointer;
-      font-weight: 500;
-    }
-    .day-chip.active {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
+    /* 입력 폼 */
     .input-row {
       display: flex;
       gap: 8px;
+      margin-top: 10px;
     }
     input[type="text"] {
       flex: 1;
       padding: 10px 14px;
       border: 1px solid var(--border);
       border-radius: 10px;
-      font-size: 0.92rem;
       outline: none;
+      font-size: 0.9rem;
     }
     input[type="text"]:focus { border-color: var(--primary); }
-    .btn-submit {
+    .btn-action {
       background: var(--primary);
       color: #fff;
       border: none;
@@ -204,6 +166,62 @@
       cursor: pointer;
     }
 
+    /* 요일 칩 선택기 */
+    .day-selector {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .day-chip {
+      flex: 1;
+      padding: 6px 0;
+      font-size: 0.75rem;
+      text-align: center;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .day-chip.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* 주간 루틴 매트릭스 표 */
+    .table-container {
+      overflow-x: auto;
+      margin-top: 8px;
+    }
+    .week-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    .week-table th {
+      padding: 8px 4px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid var(--border);
+    }
+    .week-table td {
+      padding: 8px 4px;
+      border: 1px solid var(--border);
+      vertical-align: top;
+      max-width: 60px;
+      word-break: break-all;
+    }
+    .matrix-item {
+      display: inline-block;
+      background: #f1f5f9;
+      border-radius: 4px;
+      padding: 2px 4px;
+      margin: 2px 0;
+      font-size: 0.72rem;
+    }
+
     /* 캘린더 */
     .cal-header {
       display: flex;
@@ -211,89 +229,81 @@
       align-items: center;
       margin-bottom: 16px;
     }
-    .cal-nav-btn {
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 4px 10px;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
     .cal-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 6px;
       text-align: center;
     }
-    .cal-day-label {
+    .cal-label {
       font-size: 0.78rem;
       color: var(--sub);
       font-weight: 600;
-      padding-bottom: 6px;
+      padding-bottom: 4px;
     }
-    .cal-day-label:first-child { color: #ef4444; }
-    .cal-day-label:last-child { color: #3b82f6; }
     .cal-cell {
-      min-height: 48px;
-      border-radius: 10px;
-      border: 1px solid transparent;
+      min-height: 52px;
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
       font-size: 0.85rem;
-      position: relative;
       background: #fafafa;
+      border: 1px solid transparent;
+      cursor: pointer;
     }
-    .cal-cell.empty {
-      background: transparent;
-      cursor: default;
-    }
-    .cal-cell.selected {
-      border: 2px solid var(--primary) !important;
-    }
-    .cal-cell.today {
-      font-weight: bold;
-      color: var(--primary);
-    }
-    .cal-rate {
-      font-size: 0.68rem;
-      margin-top: 2px;
-      font-weight: 600;
-    }
-    /* 달성도에 따른 색상 */
+    .cal-cell.today { font-weight: bold; border-color: var(--primary); }
+    .cal-cell-rate { font-size: 0.65rem; font-weight: 600; margin-top: 2px; }
     .lvl-0 { background: #f8fafc; color: #94a3b8; }
     .lvl-low { background: #fee2e2; color: #b91c1c; }
     .lvl-mid { background: #fef3c7; color: #b45309; }
     .lvl-high { background: #dcfce7; color: #15803d; }
     .lvl-perfect { background: #22c55e; color: #fff; }
-    .lvl-perfect .cal-rate { color: #fff; }
+    .lvl-perfect .cal-cell-rate { color: #fff; }
+
+    /* 하단 네비게이션 바 */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      max-width: 500px;
+      margin: 0 auto;
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--sub);
+      font-size: 0.8rem;
+      font-weight: 600;
+      gap: 3px;
+    }
+    .nav-item.active { color: var(--primary); }
+    .nav-icon { font-size: 1.2rem; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <!-- 캘린더 영역 -->
-    <div class="card">
-      <div class="cal-header">
-        <button class="cal-nav-btn" onclick="changeMonth(-1)">&lt; 이전달</button>
-        <strong id="calMonthYear" style="font-size: 1.05rem;"></strong>
-        <button class="cal-nav-btn" onclick="changeMonth(1)">다음달 &gt;</button>
-      </div>
-      <div class="cal-grid" id="calGrid"></div>
-    </div>
-
-    <!-- 선택한 날짜의 루틴 체크리스트 & 달성률 -->
-    <div class="card">
-      <div class="header-top">
-        <span class="current-date-title" id="selectedDateTitle"></span>
-        <span class="today-badge" onclick="selectToday()">오늘 보기</span>
-      </div>
-
-      <div class="progress-wrapper">
+  <div class="app-container">
+    <!-- 1. 할 일 탭 화면 -->
+    <div class="tab-view active" id="tabTodos">
+      <div class="card">
+        <div class="header-title" id="todayHeader">오늘의 루틴 & 할 일</div>
         <div class="progress-meta">
-          <span>달성 성공률</span>
+          <span>오늘 전체 달성률</span>
           <span id="rateLabel">0%</span>
         </div>
         <div class="progress-track">
@@ -301,245 +311,323 @@
         </div>
       </div>
 
-      <ul class="routine-list" id="routineList"></ul>
+      <!-- 오늘 요일 루틴 -->
+      <div class="card">
+        <div class="section-title">
+          <span>🔄 오늘의 고정 루틴</span>
+          <span id="currentDayOfWeek" style="font-size: 0.8rem; font-weight: normal;"></span>
+        </div>
+        <ul class="todo-list" id="routineTodoList"></ul>
+      </div>
+
+      <!-- 당일 할 일 (단발성) -->
+      <div class="card">
+        <div class="section-title">📌 당일 해야 할 일</div>
+        <ul class="todo-list" id="dailyTodoList"></ul>
+        <form class="input-row" id="addDailyForm">
+          <input type="text" id="dailyInput" placeholder="오늘 끝낼 할 일 입력..." autocomplete="off" />
+          <button type="submit" class="btn-action">추가</button>
+        </form>
+      </div>
+
+      <!-- 일주일 요일별 루틴 관리 및 표 -->
+      <div class="card">
+        <div class="section-title">📅 주간 요일별 루틴 표</div>
+        <div class="table-container">
+          <table class="week-table">
+            <thead>
+              <tr>
+                <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th>
+              </tr>
+            </thead>
+            <tbody id="weekMatrixBody"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
+          <span style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px;">새 요일 루틴 등록</span>
+          <div class="day-selector" id="daySelector">
+            <div class="day-chip active" data-day="all">매일</div>
+            <div class="day-chip" data-day="1">월</div>
+            <div class="day-chip" data-day="2">화</div>
+            <div class="day-chip" data-day="3">수</div>
+            <div class="day-chip" data-day="4">목</div>
+            <div class="day-chip" data-day="5">금</div>
+            <div class="day-chip" data-day="6">토</div>
+            <div class="day-chip" data-day="0">일</div>
+          </div>
+          <form class="input-row" id="addRoutineForm">
+            <input type="text" id="routineInput" placeholder="요일별 반복 루틴 이름..." autocomplete="off" />
+            <button type="submit" class="btn-action">등록</button>
+          </form>
+        </div>
+      </div>
     </div>
 
-    <!-- 요일별 루틴 템플릿 등록 -->
-    <div class="card">
-      <div class="form-title">➕ 요일별 루틴 등록</div>
-      <div class="day-selector" id="daySelector">
-        <button type="button" class="day-chip active" data-day="all">매일</button>
-        <button type="button" class="day-chip" data-day="1">월</button>
-        <button type="button" class="day-chip" data-day="2">화</button>
-        <button type="button" class="day-chip" data-day="3">수</button>
-        <button type="button" class="day-chip" data-day="4">목</button>
-        <button type="button" class="day-chip" data-day="5">금</button>
-        <button type="button" class="day-chip" data-day="6">토</button>
-        <button type="button" class="day-chip" data-day="0">일</button>
+    <!-- 2. 캘린더 탭 화면 -->
+    <div class="tab-view" id="tabCalendar">
+      <div class="card">
+        <div class="cal-header">
+          <button onclick="changeMonth(-1)" class="btn-action" style="padding: 4px 10px; background: none; color: var(--text); border: 1px solid var(--border);">&lt;</button>
+          <strong id="calMonthYear" style="font-size: 1.05rem;"></strong>
+          <button onclick="changeMonth(1)" class="btn-action" style="padding: 4px 10px; background: none; color: var(--text); border: 1px solid var(--border);">&gt;</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
       </div>
-      <form class="input-row" id="addRoutineForm">
-        <input type="text" id="routineName" placeholder="할 일 이름 (예: 물 1L, 러닝 3km)" autocomplete="off" />
-        <button type="submit" class="btn-submit">등록</button>
-      </form>
     </div>
   </div>
 
+  <!-- 하단 네비게이션 바 -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('todos')" id="navTodos">
+      <div class="nav-icon">✓</div>
+      <span>할일</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('cal')" id="navCal">
+      <div class="nav-icon">📅</div>
+      <span>캘린더</span>
+    </div>
+  </nav>
+
   <script>
     const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+    const today = new Date();
+    const todayKey = getFormattedDate(today);
 
-    // 1. 상태 데이터
-    // 루틴 템플릿: [{ id, text, days: ['all'] 또는 [1, 3, 5] }]
-    let templates = JSON.parse(localStorage.getItem('routine_templates')) || [
-      { id: 1, text: '기상 직후 물 한 컵 마시기', days: ['all'] },
-      { id: 2, text: '평일 아침 스트레칭 5분', days: [1, 2, 3, 4, 5] },
-      { id: 3, text: '주말 산책 & 여유 갖기', days: [0, 6] }
+    // 저장소 구조:
+    // 1. routineTemplates: [{ id, text, days: ['all' | 0~6] }]
+    // 2. dailyRecords: { 'YYYY-MM-DD': { routineDone: { id: bool }, oneOffTasks: [{ id, text, done }] } }
+    let routineTemplates = JSON.parse(localStorage.getItem('routine_templates')) || [
+      { id: 1, text: '기상 직후 물 마시기', days: ['all'] },
+      { id: 2, text: '스트레칭 10분', days: [1, 2, 3, 4, 5] },
+      { id: 3, text: '주말 산책', days: [0, 6] }
     ];
 
-    // 날짜별 기록: { 'YYYY-MM-DD': { routineId: true/false } }
-    let dailyRecords = JSON.parse(localStorage.getItem('daily_records')) || {};
+    let historyRecords = JSON.parse(localStorage.getItem('history_records')) || {};
 
-    let viewDate = new Date(); // 캘린더용
-    let selectedDate = new Date(); // 현재 조회/체크 중인 날짜
+    if (!historyRecords[todayKey]) {
+      historyRecords[todayKey] = { routineDone: {}, oneOffTasks: [] };
+    }
 
-    // Helper: 날짜를 YYYY-MM-DD 로 반환
-    function formatDateKey(d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
+    let calViewDate = new Date();
+    let selectedRoutineDays = ['all'];
+
+    function getFormattedDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return `${y}-${m}-${day}`;
     }
 
-    // 초기화 및 이벤트 바인딩
-    function init() {
-      setupDaySelector();
-      renderCalendar();
-      renderDayTasks();
+    function saveAndSync() {
+      localStorage.setItem('routine_templates', JSON.stringify(routineTemplates));
+      localStorage.setItem('history_records', JSON.stringify(historyRecords));
+      renderToday();
+      renderMatrix();
     }
 
-    // 요일 선택기 클릭 핸들러
-    let selectedDays = ['all'];
-    function setupDaySelector() {
-      const chips = document.querySelectorAll('.day-chip');
-      chips.forEach(chip => {
-        chip.addEventListener('click', () => {
-          const val = chip.dataset.day;
-          if (val === 'all') {
-            selectedDays = ['all'];
-            chips.forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-          } else {
-            const num = parseInt(val);
-            // '매일' 해제
-            document.querySelector('.day-chip[data-day="all"]').classList.remove('active');
-            selectedDays = selectedDays.filter(d => d !== 'all');
+    // 탭 전환
+    function switchTab(tab) {
+      const tabTodos = document.getElementById('tabTodos');
+      const tabCalendar = document.getElementById('tabCalendar');
+      const navTodos = document.getElementById('navTodos');
+      const navCal = document.getElementById('navCal');
 
-            if (selectedDays.includes(num)) {
-              selectedDays = selectedDays.filter(d => d !== num);
-              chip.classList.remove('active');
-            } else {
-              selectedDays.push(num);
-              chip.classList.add('active');
-            }
-
-            if (selectedDays.length === 0) {
-              selectedDays = ['all'];
-              document.querySelector('.day-chip[data-day="all"]').classList.add('active');
-            }
-          }
-        });
-      });
-    }
-
-    // 특정 요일에 해당하는 루틴 필터링
-    function getRoutinesForDay(dayOfWeek) {
-      return templates.filter(t => t.days.includes('all') || t.days.includes(dayOfWeek));
-    }
-
-    // 특정 날짜의 달성률(%) 계산
-    function calculateRate(dateKey, dayOfWeek) {
-      const routines = getRoutinesForDay(dayOfWeek);
-      if (routines.length === 0) return 0;
-      const records = dailyRecords[dateKey] || {};
-      const completedCount = routines.filter(r => records[r.id]).length;
-      return Math.round((completedCount / routines.length) * 100);
-    }
-
-    // 선택한 날짜의 할일 목록 및 달성률 렌더링
-    function renderDayTasks() {
-      const dateKey = formatDateKey(selectedDate);
-      const dayOfWeek = selectedDate.getDay();
-      const routines = getRoutinesForDay(dayOfWeek);
-      const records = dailyRecords[dateKey] || {};
-
-      // 상단 날짜 텍스트
-      const options = { month: 'long', day: 'numeric', weekday: 'short' };
-      document.getElementById('selectedDateTitle').textContent = 
-        `${selectedDate.toLocaleDateString('ko-KR', options)} 할 일`;
-
-      const listEl = document.getElementById('routineList');
-      listEl.innerHTML = '';
-
-      if (routines.length === 0) {
-        listEl.innerHTML = `<li style="text-align:center; color:var(--sub); padding:16px 0;">해당 요일에 등록된 루틴이 없습니다.</li>`;
+      if (tab === 'todos') {
+        tabTodos.classList.add('active');
+        tabCalendar.classList.remove('active');
+        navTodos.classList.add('active');
+        navCal.classList.remove('active');
+        renderToday();
       } else {
-        routines.forEach(item => {
-          const isDone = !!records[item.id];
+        tabTodos.classList.remove('active');
+        tabCalendar.classList.add('active');
+        navTodos.classList.remove('active');
+        navCal.classList.add('active');
+        renderCalendar();
+      }
+    }
+
+    // 요일 선택 칩 바인딩
+    document.querySelectorAll('#daySelector .day-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const day = chip.dataset.day;
+        if (day === 'all') {
+          selectedRoutineDays = ['all'];
+          document.querySelectorAll('#daySelector .day-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+        } else {
+          document.querySelector('#daySelector .day-chip[data-day="all"]').classList.remove('active');
+          selectedRoutineDays = selectedRoutineDays.filter(d => d !== 'all');
+          const dNum = parseInt(day);
+          if (selectedRoutineDays.includes(dNum)) {
+            selectedRoutineDays = selectedRoutineDays.filter(d => d !== dNum);
+            chip.classList.remove('active');
+          } else {
+            selectedRoutineDays.push(dNum);
+            chip.classList.add('active');
+          }
+          if (selectedRoutineDays.length === 0) {
+            selectedRoutineDays = ['all'];
+            document.querySelector('#daySelector .day-chip[data-day="all"]').classList.add('active');
+          }
+        }
+      });
+    });
+
+    // 오늘 할일 렌더링
+    function renderToday() {
+      const dayOfWeek = today.getDay();
+      document.getElementById('todayHeader').textContent = `${today.getMonth() + 1}월 ${today.getDate()}일 (${DAY_NAMES[dayOfWeek]})`;
+      document.getElementById('currentDayOfWeek').textContent = `매주 ${DAY_NAMES[dayOfWeek]}요일 루틴`;
+
+      const todaysRoutines = routineTemplates.filter(r => r.days.includes('all') || r.days.includes(dayOfWeek));
+      const record = historyRecords[todayKey] || { routineDone: {}, oneOffTasks: [] };
+
+      // 1. 고정 루틴 리스트
+      const rList = document.getElementById('routineTodoList');
+      rList.innerHTML = '';
+      if (todaysRoutines.length === 0) {
+        rList.innerHTML = `<li style="color:var(--sub);font-size:0.85rem;text-align:center;padding:10px;">등록된 오늘 루틴이 없습니다.</li>`;
+      } else {
+        todaysRoutines.forEach(r => {
+          const isDone = !!record.routineDone[r.id];
           const li = document.createElement('li');
-          li.className = `routine-item ${isDone ? 'done' : ''}`;
-
-          let dayTag = item.days.includes('all') ? '매일' : item.days.map(d => DAY_NAMES[d]).join(',');
-
+          li.className = `todo-item ${isDone ? 'done' : ''}`;
           li.innerHTML = `
             <div class="item-left">
-              <div class="checkbox-custom">${isDone ? '✓' : ''}</div>
-              <span class="item-text">${item.text}</span>
-              <span class="item-tags">${dayTag}</span>
+              <div class="check-circle">${isDone ? '✓' : ''}</div>
+              <span class="todo-text">${r.text}</span>
             </div>
-            <button class="del-btn" title="영구 삭제">&times;</button>
+            <button class="del-btn" title="루틴 삭제">&times;</button>
           `;
-
-          // 완료 토글
-          li.querySelector('.item-left').addEventListener('click', () => {
-            toggleRecord(dateKey, item.id);
-          });
-
-          // 템플릿 삭제
-          li.querySelector('.del-btn').addEventListener('click', (e) => {
+          li.querySelector('.item-left').onclick = () => {
+            record.routineDone[r.id] = !isDone;
+            saveAndSync();
+          };
+          li.querySelector('.del-btn').onclick = (e) => {
             e.stopPropagation();
-            deleteTemplate(item.id);
-          });
-
-          listEl.appendChild(li);
+            if (confirm('이 반복 루틴을 삭제하시겠습니까?')) {
+              routineTemplates = routineTemplates.filter(t => t.id !== r.id);
+              saveAndSync();
+            }
+          };
+          rList.appendChild(li);
         });
       }
 
-      // 진행률 업데이트
-      const rate = calculateRate(dateKey, dayOfWeek);
+      // 2. 당일 단발성 할 일 리스트
+      const dList = document.getElementById('dailyTodoList');
+      dList.innerHTML = '';
+      if (record.oneOffTasks.length === 0) {
+        dList.innerHTML = `<li style="color:var(--sub);font-size:0.85rem;text-align:center;padding:10px;">당일 할 일이 없습니다.</li>`;
+      } else {
+        record.oneOffTasks.forEach(task => {
+          const li = document.createElement('li');
+          li.className = `todo-item ${task.done ? 'done' : ''}`;
+          li.innerHTML = `
+            <div class="item-left">
+              <div class="check-circle">${task.done ? '✓' : ''}</div>
+              <span class="todo-text">${task.text}</span>
+            </div>
+            <button class="del-btn">&times;</button>
+          `;
+          li.querySelector('.item-left').onclick = () => {
+            task.done = !task.done;
+            saveAndSync();
+          };
+          li.querySelector('.del-btn').onclick = (e) => {
+            e.stopPropagation();
+            record.oneOffTasks = record.oneOffTasks.filter(t => t.id !== task.id);
+            saveAndSync();
+          };
+          dList.appendChild(li);
+        });
+      }
+
+      // 3. 달성률 계산
+      const totalItems = todaysRoutines.length + record.oneOffTasks.length;
+      const routineDoneCount = todaysRoutines.filter(r => record.routineDone[r.id]).length;
+      const oneOffDoneCount = record.oneOffTasks.filter(t => t.done).length;
+      const doneTotal = routineDoneCount + oneOffDoneCount;
+      const rate = totalItems === 0 ? 0 : Math.round((doneTotal / totalItems) * 100);
+
       document.getElementById('rateBar').style.width = rate + '%';
-      document.getElementById('rateLabel').textContent = `${rate}%`;
-
-      renderCalendar(); // 캘린더 색상 실시간 연동
+      document.getElementById('rateLabel').textContent = `${rate}% (${doneTotal}/${totalItems})`;
     }
 
-    // 토글 저장
-    function toggleRecord(dateKey, routineId) {
-      if (!dailyRecords[dateKey]) dailyRecords[dateKey] = {};
-      dailyRecords[dateKey][routineId] = !dailyRecords[dateKey][routineId];
-      localStorage.setItem('daily_records', JSON.stringify(dailyRecords));
-      renderDayTasks();
-    }
+    // 요일 루틴 표 매트릭스
+    function renderMatrix() {
+      const tbody = document.getElementById('weekMatrixBody');
+      tbody.innerHTML = '';
+      const row = document.createElement('tr');
+      // 월(1)부터 일(0) 순서
+      const order = [1, 2, 3, 4, 5, 6, 0];
 
-    // 템플릿 삭제
-    function deleteTemplate(id) {
-      if (!confirm('이 루틴을 완전히 삭제하시겠습니까?')) return;
-      templates = templates.filter(t => t.id !== id);
-      localStorage.setItem('routine_templates', JSON.stringify(templates));
-      renderDayTasks();
-    }
-
-    // 새 루틴 추가
-    document.getElementById('addRoutineForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const input = document.getElementById('routineName');
-      const text = input.value.trim();
-      if (!text) return;
-
-      templates.push({
-        id: Date.now(),
-        text,
-        days: [...selectedDays]
+      order.forEach(dayIndex => {
+        const td = document.createElement('td');
+        const dayTasks = routineTemplates.filter(r => r.days.includes('all') || r.days.includes(dayIndex));
+        if (dayTasks.length === 0) {
+          td.innerHTML = `<span style="color:#cbd5e1;">-</span>`;
+        } else {
+          dayTasks.forEach(t => {
+            const span = document.createElement('div');
+            span.className = 'matrix-item';
+            span.textContent = t.text;
+            td.appendChild(span);
+          });
+        }
+        row.appendChild(td);
       });
+      tbody.appendChild(row);
+    }
 
-      localStorage.setItem('routine_templates', JSON.stringify(templates));
-      input.value = '';
-      renderDayTasks();
-    });
-
-    // 캘린더 렌더링
+    // 캘린더 화면
     function renderCalendar() {
-      const year = viewDate.getFullYear();
-      const month = viewDate.getMonth();
+      const year = calViewDate.getFullYear();
+      const month = calViewDate.getMonth();
       document.getElementById('calMonthYear').textContent = `${year}년 ${month + 1}월`;
 
       const grid = document.getElementById('calGrid');
       grid.innerHTML = '';
 
-      // 요일 헤더
-      DAY_NAMES.forEach(d => {
-        const span = document.createElement('div');
-        span.className = 'cal-day-label';
-        span.textContent = d;
-        grid.appendChild(span);
+      ['일', '월', '화', '수', '목', '금', '토'].forEach(label => {
+        const d = document.createElement('div');
+        d.className = 'cal-label';
+        d.textContent = label;
+        grid.appendChild(d);
       });
 
       const firstDay = new Date(year, month, 1).getDay();
       const totalDays = new Date(year, month + 1, 0).getDate();
-      const todayKey = formatDateKey(new Date());
-      const selectedKey = formatDateKey(selectedDate);
 
-      // 앞쪽 빈칸
       for (let i = 0; i < firstDay; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'cal-cell empty';
-        grid.appendChild(emptyCell);
+        grid.appendChild(document.createElement('div'));
       }
 
-      // 날짜 채우기
       for (let day = 1; day <= totalDays; day++) {
+        const d = new Date(year, month, day);
+        const dKey = getFormattedDate(d);
+        const dayOfWeek = d.getDay();
+
         const cell = document.createElement('div');
-        const curr = new Date(year, month, day);
-        const currKey = formatDateKey(curr);
-        const dayOfWeek = curr.getDay();
-
         cell.className = 'cal-cell';
-        if (currKey === todayKey) cell.classList.add('today');
-        if (currKey === selectedKey) cell.classList.add('selected');
+        if (dKey === todayKey) cell.classList.add('today');
 
-        const rate = calculateRate(currKey, dayOfWeek);
-        const hasRoutines = getRoutinesForDay(dayOfWeek).length > 0;
+        // 과거 날짜 또는 오늘 달성률 계산
+        const record = historyRecords[dKey];
+        const dayRoutines = routineTemplates.filter(r => r.days.includes('all') || r.days.includes(dayOfWeek));
+        let totalCount = dayRoutines.length + (record ? record.oneOffTasks.length : 0);
+        let doneCount = 0;
 
-        // 달성률 색상 클래스 부여
-        if (hasRoutines) {
+        if (record) {
+          doneCount += dayRoutines.filter(r => record.routineDone[r.id]).length;
+          doneCount += record.oneOffTasks.filter(t => t.done).length;
+        }
+
+        const rate = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+        if (totalCount > 0 && record) {
           if (rate === 100) cell.classList.add('lvl-perfect');
           else if (rate >= 70) cell.classList.add('lvl-high');
           else if (rate >= 30) cell.classList.add('lvl-mid');
@@ -549,30 +637,41 @@
 
         cell.innerHTML = `
           <span>${day}</span>
-          ${hasRoutines ? `<span class="cal-rate">${rate}%</span>` : ''}
+          ${totalCount > 0 && record ? `<span class="cal-cell-rate">${rate}%</span>` : ''}
         `;
-
-        cell.addEventListener('click', () => {
-          selectedDate = curr;
-          renderDayTasks();
-        });
-
         grid.appendChild(cell);
       }
     }
 
     function changeMonth(delta) {
-      viewDate.setMonth(viewDate.getMonth() + delta);
+      calViewDate.setMonth(calViewDate.getMonth() + delta);
       renderCalendar();
     }
 
-    function selectToday() {
-      selectedDate = new Date();
-      viewDate = new Date();
-      renderDayTasks();
-    }
+    // 폼 이벤트 핸들러
+    document.getElementById('addDailyForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('dailyInput');
+      const text = input.value.trim();
+      if (!text) return;
+      historyRecords[todayKey].oneOffTasks.push({ id: Date.now(), text, done: false });
+      input.value = '';
+      saveAndSync();
+    });
 
-    init();
+    document.getElementById('addRoutineForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('routineInput');
+      const text = input.value.trim();
+      if (!text) return;
+      routineTemplates.push({ id: Date.now(), text, days: [...selectedRoutineDays] });
+      input.value = '';
+      saveAndSync();
+    });
+
+    // 시작
+    renderToday();
+    renderMatrix();
   </script>
 </body>
 </html>
