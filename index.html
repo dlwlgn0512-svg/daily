@@ -179,13 +179,12 @@
       padding: 12px 14px;
       border: 1px solid var(--border);
       border-radius: 12px;
-      cursor: pointer;
       user-select: none;
       background: #fff;
     }
-    .todo-item.done { background: #f8fafc; opacity: 0.75; }
+    .todo-item.done { background: #f8fafc; opacity: 0.85; }
     .todo-item.done .todo-text { text-decoration: line-through; color: var(--sub); }
-    .item-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+    .item-left { display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; }
     .check-circle {
       width: 22px;
       height: 22px;
@@ -200,6 +199,8 @@
       flex-shrink: 0;
     }
     .todo-item.done .check-circle { background: var(--primary); border-color: var(--primary); }
+    
+    /* 시간 수정 가능 배지 */
     .time-badge {
       font-size: 0.72rem;
       color: var(--primary-dark);
@@ -209,7 +210,16 @@
       font-weight: 600;
       margin-left: 6px;
       white-space: nowrap;
+      cursor: pointer;
+      border: 1px solid #bfdbfe;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
     }
+    .time-badge:hover {
+      background: #dbeafe;
+    }
+
     .del-btn {
       background: none;
       border: none;
@@ -285,8 +295,19 @@
       font-weight: 600;
       cursor: pointer;
     }
+    .btn-edit-sm {
+      background: #e0f2fe;
+      color: var(--primary-dark);
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 4px;
+    }
 
-    /* 🌟 플래너 타임테이블 + 우측 텍스트 기록 라인 🌟 */
+    /* 플래너 타임테이블 */
     .planner-card {
       border: 1.5px solid #475569;
       border-radius: 14px;
@@ -336,9 +357,8 @@
       flex-shrink: 0;
       height: 100%;
     }
-    /* 10분 정사각형 블록 컨테이너 (고정 폭) */
     .planner-blocks {
-      width: 144px; /* 24px * 6 = 144px */
+      width: 144px;
       display: grid;
       grid-template-columns: repeat(6, 24px);
       height: 100%;
@@ -369,7 +389,6 @@
       opacity: 0.85;
     }
 
-    /* 우측 플래너 텍스트 메모 줄 */
     .planner-text-line {
       flex: 1;
       padding: 0 8px;
@@ -381,10 +400,6 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      cursor: pointer;
-    }
-    .planner-text-line:hover {
-      background: #f8fafc;
     }
     .event-chip-inline {
       display: inline-flex;
@@ -398,6 +413,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      cursor: pointer;
     }
     .event-chip-inline.routine {
       background: #dcfce7;
@@ -575,14 +591,14 @@
         </form>
       </div>
 
-      <!-- 정사각형 플래너 그리드 + 우측 일정 텍스트 카드 -->
+      <!-- 플래너 그리드 카드 -->
       <div class="planner-card">
         <div class="planner-header-row">
           <span>TIMETABLE (10m)</span>
           <span>PLAN / DO</span>
         </div>
         <div style="font-size:0.72rem; color:var(--sub); text-align:center; margin: 2px 0 6px;">
-          💡 드래그하여 등록 | 칠해진 칸을 누르면 취소/삭제할 수 있습니다.
+          💡 드래그하여 등록 | 칠해진 칸이나 텍스트를 누르면 <strong>시간 수정/취소</strong>가 가능합니다.
         </div>
         <div class="planner-grid" id="plannerGrid"></div>
       </div>
@@ -779,11 +795,74 @@
       });
     });
 
-    // 🌟 타임테이블 렌더링 (10분 칸 + 우측 일정 텍스트 + 취소 기능)
+    // 🌟 시간 변경 팝업 처리 공통 함수
+    function editEventTime(ev) {
+      const curStart = minToTime(ev.startMin);
+      const curEnd = minToTime(ev.endMin);
+
+      const input = prompt(`'${ev.title}' 시간을 변경합니다.\n시작~종료 시간을 형식에 맞게 입력하세요 (예: 14:00~14:30)`, `${curStart}~${curEnd}`);
+      if (!input || !input.includes('~')) return;
+
+      const [newStartStr, newEndStr] = input.split('~').map(s => s.trim());
+      if (!newStartStr || !newEndStr) return;
+
+      const sMin = timeToMin(newStartStr);
+      let eMin = timeToMin(newEndStr);
+      if (eMin <= sMin) eMin = sMin + 10;
+
+      ev.startMin = sMin;
+      ev.endMin = eMin;
+
+      const timeStr = `${minToTime(sMin)}~${minToTime(eMin)}`;
+      if (ev.refRoutineId) {
+        historyRecords[todayKey].routineTimes[ev.refRoutineId] = timeStr;
+      }
+      if (ev.refTaskId) {
+        const task = (historyRecords[todayKey].oneOffTasks || []).find(t => t.id === ev.refTaskId);
+        if (task) task.time = timeStr;
+      }
+
+      syncToFirebase();
+      renderToday();
+      renderPlannerGrid();
+    }
+
+    // 일정 취소/삭제/수정 팝업 공통 처리
+    function promptEventAction(ev) {
+      const choice = confirm(`'${ev.title}' (${minToTime(ev.startMin)} ~ ${minToTime(ev.endMin)})\n\n[확인] 시간을 변경하시겠습니까?\n[취소] 일정을 삭제하시겠습니까?`);
+      if (choice) {
+        editEventTime(ev);
+      } else {
+        if (confirm(`'${ev.title}' 일정을 완전히 삭제(취소)하시겠습니까?`)) {
+          deleteEvent(ev);
+        }
+      }
+    }
+
+    function deleteEvent(ev) {
+      if (ev.refRoutineId) {
+        delete historyRecords[todayKey].routineDone[ev.refRoutineId];
+        delete historyRecords[todayKey].routineTimes[ev.refRoutineId];
+      }
+      if (ev.refTaskId) {
+        const task = (historyRecords[todayKey].oneOffTasks || []).find(t => t.id === ev.refTaskId);
+        if (task) {
+          task.done = false;
+          task.time = null;
+        }
+      }
+
+      historyRecords[todayKey].rangeEvents = (historyRecords[todayKey].rangeEvents || []).filter(item => item.id !== ev.id);
+      syncToFirebase();
+      renderToday();
+    }
+
+    // 🌟 플래너 타임테이블
     let isDragging = false;
     let dragStartMin = null;
     let dragCurrentMin = null;
     let dragMoved = false;
+    let clickedExistingEvent = null;
 
     function renderPlannerGrid() {
       ensureTodayData();
@@ -796,13 +875,11 @@
         const row = document.createElement('div');
         row.className = 'planner-row';
 
-        // 1. 시간 축
         const hourLabel = document.createElement('div');
         hourLabel.className = 'planner-hour';
         hourLabel.textContent = h;
         row.appendChild(hourLabel);
 
-        // 2. 10분 단위 6개 정사각형 블록
         const blocksWrapper = document.createElement('div');
         blocksWrapper.className = 'planner-blocks';
 
@@ -823,7 +900,7 @@
 
           if (matchedEvent) {
             cell.classList.add(matchedEvent.type === 'routine' ? 'routine-filled' : 'filled');
-            cell.title = `${matchedEvent.title} (${minToTime(matchedEvent.startMin)} ~ ${minToTime(matchedEvent.endMin)}) - 클릭 시 취소`;
+            cell.title = `${matchedEvent.title} (${minToTime(matchedEvent.startMin)}~${minToTime(matchedEvent.endMin)}) - 클릭 시 수정/취소`;
           }
 
           cell.addEventListener('mousedown', (e) => {
@@ -838,11 +915,10 @@
         }
         row.appendChild(blocksWrapper);
 
-        // 3. 우측 플래너 텍스트 메모란 (해당 시간에 시작/진행되는 일정 이름 표시)
+        // 우측 플래너 텍스트 메모란
         const textLine = document.createElement('div');
         textLine.className = 'planner-text-line';
 
-        // 이 시간대에 걸쳐있는 일정들 찾기
         const rowEvents = events.filter(ev => {
           return Math.max(rowStartMin, ev.startMin) < Math.min(rowEndMin, ev.endMin);
         });
@@ -852,12 +928,11 @@
             const chip = document.createElement('span');
             chip.className = `event-chip-inline ${ev.type === 'routine' ? 'routine' : 'manual'}`;
             chip.textContent = `${ev.title}`;
-            chip.title = `${ev.title} (${minToTime(ev.startMin)}~${minToTime(ev.endMin)}) - 클릭 시 취소`;
+            chip.title = `${ev.title} (${minToTime(ev.startMin)}~${minToTime(ev.endMin)}) - 클릭 시 수정/취소`;
             
-            // 텍스트 클릭 시에도 취소/삭제 기능
             chip.onclick = (e) => {
               e.stopPropagation();
-              deleteEvent(ev);
+              promptEventAction(ev);
             };
             textLine.appendChild(chip);
           });
@@ -899,8 +974,6 @@
       renderSummaryList(events);
     }
 
-    let clickedExistingEvent = null;
-
     function startDrag(startMin, existingEvent = null) {
       isDragging = true;
       dragMoved = false;
@@ -936,9 +1009,9 @@
       isDragging = false;
       document.querySelectorAll('.block-cell').forEach(cell => cell.classList.remove('selecting'));
 
-      // 이미 색칠된 칸을 클릭만 한 경우 -> 취소(삭제) 확인 창
+      // 칠해진 칸을 탭한 경우 시간 수정/삭제 액션 실행
       if (!dragMoved && clickedExistingEvent) {
-        deleteEvent(clickedExistingEvent);
+        promptEventAction(clickedExistingEvent);
         clickedExistingEvent = null;
         return;
       }
@@ -946,7 +1019,6 @@
       const minStart = Math.min(dragStartMin, dragCurrentMin);
       let maxEnd = Math.max(dragStartMin, dragCurrentMin) + 10;
       
-      // 드래그 없이 빈 칸을 1번만 탭한 경우 30분 기본 블록
       if (!dragMoved && (maxEnd - minStart) === 10) {
         maxEnd = Math.min(minStart + 30, 1440);
       }
@@ -974,28 +1046,6 @@
       clickedExistingEvent = null;
     }
 
-    // 일정 취소/삭제 공통 함수
-    function deleteEvent(ev) {
-      if (confirm(`'${ev.title}' 일정을 취소(삭제)하시겠습니까?`)) {
-        // 연동된 고정 루틴이나 할 일이 있는 경우 체크 상태 해제
-        if (ev.refRoutineId) {
-          delete historyRecords[todayKey].routineDone[ev.refRoutineId];
-          delete historyRecords[todayKey].routineTimes[ev.refRoutineId];
-        }
-        if (ev.refTaskId) {
-          const task = (historyRecords[todayKey].oneOffTasks || []).find(t => t.id === ev.refTaskId);
-          if (task) {
-            task.done = false;
-            task.time = null;
-          }
-        }
-
-        historyRecords[todayKey].rangeEvents = (historyRecords[todayKey].rangeEvents || []).filter(item => item.id !== ev.id);
-        syncToFirebase();
-        renderToday();
-      }
-    }
-
     function renderSummaryList(events) {
       const summaryList = document.getElementById('eventsSummaryList');
       summaryList.innerHTML = '';
@@ -1012,11 +1062,13 @@
               <strong>${ev.title}</strong>
               <span style="color:var(--sub);margin-left:6px;font-size:0.75rem;">${minToTime(ev.startMin)} ~ ${minToTime(ev.endMin)}</span>
             </div>
-            <button class="btn-del-sm" style="padding:2px 6px;">취소</button>
+            <div>
+              <button class="btn-edit-sm">수정</button>
+              <button class="btn-del-sm">취소</button>
+            </div>
           `;
-          li.querySelector('.btn-del-sm').onclick = () => {
-            deleteEvent(ev);
-          };
+          li.querySelector('.btn-edit-sm').onclick = () => editEventTime(ev);
+          li.querySelector('.btn-del-sm').onclick = () => deleteEvent(ev);
           summaryList.appendChild(li);
         });
       }
@@ -1098,6 +1150,7 @@
       const todaysRoutines = routineTemplates.filter(r => r.days.includes('all') || r.days.includes(dayOfWeek));
       const record = historyRecords[todayKey];
 
+      // 고정 루틴 리스트
       const rList = document.getElementById('routineTodoList');
       rList.innerHTML = '';
       if (todaysRoutines.length === 0) {
@@ -1112,10 +1165,11 @@
             <div class="item-left">
               <div class="check-circle">${isDone ? '✓' : ''}</div>
               <span class="todo-text">${r.text}</span>
-              ${isDone && timeText ? `<span class="time-badge">${timeText}</span>` : ''}
             </div>
+            ${isDone && timeText ? `<span class="time-badge" title="클릭하여 시간 수정">🕒 ${timeText}</span>` : ''}
           `;
 
+          // 체크 토글
           li.querySelector('.item-left').onclick = () => {
             const nextState = !isDone;
             record.routineDone[r.id] = nextState;
@@ -1144,10 +1198,21 @@
             syncToFirebase();
           };
 
+          // 시간 배지 클릭 시 시간 변경
+          const badge = li.querySelector('.time-badge');
+          if (badge) {
+            badge.onclick = (e) => {
+              e.stopPropagation();
+              const ev = record.rangeEvents.find(item => item.refRoutineId === r.id);
+              if (ev) editEventTime(ev);
+            };
+          }
+
           rList.appendChild(li);
         });
       }
 
+      // 당일 할 일 리스트
       const dList = document.getElementById('dailyTodoList');
       dList.innerHTML = '';
       if (record.oneOffTasks.length === 0) {
@@ -1160,8 +1225,8 @@
             <div class="item-left">
               <div class="check-circle">${task.done ? '✓' : ''}</div>
               <span class="todo-text">${task.text}</span>
-              ${task.done && task.time ? `<span class="time-badge">${task.time}</span>` : ''}
             </div>
+            ${task.done && task.time ? `<span class="time-badge" title="클릭하여 시간 수정">🕒 ${task.time}</span>` : ''}
             <button class="del-btn">&times;</button>
           `;
           li.querySelector('.item-left').onclick = () => {
@@ -1187,6 +1252,16 @@
             }
             syncToFirebase();
           };
+
+          const badge = li.querySelector('.time-badge');
+          if (badge) {
+            badge.onclick = (e) => {
+              e.stopPropagation();
+              const ev = record.rangeEvents.find(item => item.refTaskId === task.id);
+              if (ev) editEventTime(ev);
+            };
+          }
+
           li.querySelector('.del-btn').onclick = (e) => {
             e.stopPropagation();
             record.oneOffTasks = record.oneOffTasks.filter(t => t.id !== task.id);
@@ -1197,6 +1272,7 @@
         });
       }
 
+      // 달성률
       const totalItems = todaysRoutines.length + record.oneOffTasks.length;
       const routineDoneCount = todaysRoutines.filter(r => record.routineDone[r.id]).length;
       const oneOffDoneCount = record.oneOffTasks.filter(t => t.done).length;
