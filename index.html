@@ -286,35 +286,35 @@
       cursor: pointer;
     }
 
-    /* 🌟 정사각형 격자 플래너 타임테이블 🌟 */
+    /* 🌟 컴팩트 정사각형 격자 플래너 타임테이블 🌟 */
     .planner-card {
       border: 1.5px solid #475569;
       border-radius: 14px;
-      padding: 14px 12px;
+      padding: 12px 10px;
       background: #fafaf9;
       user-select: none;
       display: flex;
       flex-direction: column;
-      align-items: center; /* 그리드 중앙 정렬 */
+      align-items: center;
     }
     .planner-header {
       width: 100%;
       text-align: center;
       font-weight: 800;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       letter-spacing: 0.12em;
       color: #334155;
-      padding-bottom: 8px;
+      padding-bottom: 6px;
       border-bottom: 1.5px solid #475569;
       margin-bottom: 6px;
     }
     .planner-grid {
       width: 100%;
-      max-width: 340px; /* 정사각형 칸 비율에 최적화된 너비 */
+      max-width: 220px; /* 👈 모바일에 딱 맞게 콤팩트 축소 (칸 크기 감소) */
       display: flex;
       flex-direction: column;
-      border: 1.5px solid #94a3b8;
-      border-radius: 8px;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
       background: #fff;
       overflow: hidden;
       touch-action: none;
@@ -326,14 +326,14 @@
     }
     .planner-row:last-child { border-bottom: none; }
     .planner-hour {
-      width: 36px;
+      width: 26px; /* 👈 시간 라벨 너비도 슬림하게 축소 */
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 700;
       color: #475569;
-      border-right: 1.5px solid #94a3b8;
+      border-right: 1px solid #94a3b8;
       background: #f8fafc;
       user-select: none;
       flex-shrink: 0;
@@ -344,7 +344,7 @@
       grid-template-columns: repeat(6, 1fr);
     }
     .block-cell {
-      aspect-ratio: 1 / 1; /* 👈 완전한 1:1 정사각형 칸 고정 */
+      aspect-ratio: 1 / 1; /* 👈 1:1 완벽한 정사각형 유지 */
       border-right: 1px dotted #cbd5e1;
       cursor: pointer;
       position: relative;
@@ -352,12 +352,10 @@
     }
     .block-cell:last-child { border-right: none; }
     
-    /* 선택 중인 임시 하이라이트 */
     .block-cell.selecting {
       background: #fde047 !important;
       opacity: 0.9;
     }
-    /* 일정 블록 */
     .block-cell.filled {
       background: #93c5fd !important;
       opacity: 0.85;
@@ -485,6 +483,7 @@
         </div>
       </div>
 
+      <!-- 오늘의 고정 루틴 -->
       <div class="card">
         <div class="section-title">
           <span>오늘의 고정 루틴</span>
@@ -518,7 +517,7 @@
       </div>
     </div>
 
-    <!-- 2. 오늘의 기록 탭 (정사각형 격자 플래너 타임테이블) -->
+    <!-- 2. 오늘의 기록 탭 -->
     <div class="tab-view" id="tabRecord">
       <div class="card">
         <div class="section-title">⏱️ 일정 직접 입력 (시작 ~ 종료)</div>
@@ -533,7 +532,7 @@
         </form>
       </div>
 
-      <!-- 정사각형 그리드 카드 -->
+      <!-- 콤팩트 정사각형 플래너 그리드 카드 -->
       <div class="planner-card">
         <div class="planner-header">TIMETABLE</div>
         <div style="font-size:0.75rem; color:var(--sub); text-align:center; margin: 4px 0 8px;">
@@ -734,7 +733,6 @@
       });
     });
 
-    // 드래그 & 클릭 지원 플래너 타임테이블
     let isDragging = false;
     let dragStartMin = null;
     let dragCurrentMin = null;
@@ -895,6 +893,10 @@
             <button class="btn-del-sm" style="padding:2px 6px;">삭제</button>
           `;
           li.querySelector('.btn-del-sm').onclick = () => {
+            if (ev.type === 'routine' && ev.refRoutineId) {
+              delete historyRecords[todayKey].routineDone[ev.refRoutineId];
+              delete historyRecords[todayKey].routineTimes[ev.refRoutineId];
+            }
             historyRecords[todayKey].rangeEvents = events.filter(item => item.id !== ev.id);
             syncToFirebase();
           };
@@ -978,6 +980,7 @@
       const todaysRoutines = routineTemplates.filter(r => r.days.includes('all') || r.days.includes(dayOfWeek));
       const record = historyRecords[todayKey];
 
+      // 고정 루틴 리스트
       const rList = document.getElementById('routineTodoList');
       rList.innerHTML = '';
       if (todaysRoutines.length === 0) {
@@ -995,32 +998,40 @@
               ${isDone && timeText ? `<span class="time-badge">${timeText}</span>` : ''}
             </div>
           `;
+
           li.querySelector('.item-left').onclick = () => {
             const nextState = !isDone;
             record.routineDone[r.id] = nextState;
+
             if (nextState) {
               const now = new Date();
               const currMin = now.getHours() * 60 + now.getMinutes();
-              const roundedMin = Math.round(currMin / 20) * 20;
-              const displayTime = minToTime(roundedMin);
+              const roundedStartMin = Math.round(currMin / 10) * 10;
+              const roundedEndMin = Math.min(roundedStartMin + 20, 1440);
+
+              const displayTime = `${minToTime(roundedStartMin)}~${minToTime(roundedEndMin)}`;
               record.routineTimes[r.id] = displayTime;
 
               record.rangeEvents.push({
                 id: 'rt_' + r.id + '_' + Date.now(),
+                refRoutineId: r.id,
                 title: `[루틴] ${r.text}`,
-                startMin: roundedMin,
-                endMin: roundedMin + 20,
+                startMin: roundedStartMin,
+                endMin: roundedEndMin,
                 type: 'routine'
               });
             } else {
               delete record.routineTimes[r.id];
+              record.rangeEvents = record.rangeEvents.filter(ev => ev.refRoutineId !== r.id);
             }
             syncToFirebase();
           };
+
           rList.appendChild(li);
         });
       }
 
+      // 당일 할 일 리스트
       const dList = document.getElementById('dailyTodoList');
       dList.innerHTML = '';
       if (record.oneOffTasks.length === 0) {
@@ -1042,30 +1053,35 @@
             if (task.done) {
               const now = new Date();
               const currMin = now.getHours() * 60 + now.getMinutes();
-              const roundedMin = Math.round(currMin / 20) * 20;
-              task.time = minToTime(roundedMin);
+              const roundedStartMin = Math.round(currMin / 10) * 10;
+              const roundedEndMin = Math.min(roundedStartMin + 20, 1440);
 
+              task.time = `${minToTime(roundedStartMin)}~${minToTime(roundedEndMin)}`;
               record.rangeEvents.push({
                 id: 'task_' + task.id + '_' + Date.now(),
+                refTaskId: task.id,
                 title: `[할일] ${task.text}`,
-                startMin: roundedMin,
-                endMin: roundedMin + 20,
+                startMin: roundedStartMin,
+                endMin: roundedEndMin,
                 type: 'routine'
               });
             } else {
               task.time = null;
+              record.rangeEvents = record.rangeEvents.filter(ev => ev.refTaskId !== task.id);
             }
             syncToFirebase();
           };
           li.querySelector('.del-btn').onclick = (e) => {
             e.stopPropagation();
             record.oneOffTasks = record.oneOffTasks.filter(t => t.id !== task.id);
+            record.rangeEvents = record.rangeEvents.filter(ev => ev.refTaskId !== task.id);
             syncToFirebase();
           };
           dList.appendChild(li);
         });
       }
 
+      // 달성률
       const totalItems = todaysRoutines.length + record.oneOffTasks.length;
       const routineDoneCount = todaysRoutines.filter(r => record.routineDone[r.id]).length;
       const oneOffDoneCount = record.oneOffTasks.filter(t => t.done).length;
