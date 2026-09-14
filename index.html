@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>클라우드 루틴 & 캘린더 트래커</title>
 
-  <!-- Pretendard 웹폰트 로드 -->
+  <!-- 한글 폰트 깨짐 방지 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
   <style>
@@ -20,7 +20,6 @@
       --border: #e2e8f0;
       --border-light: #f1f5f9;
       --danger: #ef4444;
-      --slot-hover: #f1f5f9;
     }
     * { box-sizing: border-box; }
     body {
@@ -52,7 +51,7 @@
       box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.05);
     }
     
-    /* 최상단 날짜 헤더 */
+    /* 헤더 */
     .top-date-card {
       display: flex;
       justify-content: space-between;
@@ -75,7 +74,7 @@
       border: 1px solid #a7f3d0;
     }
 
-    /* 🌟 글자 꺾임 방지 처리된 주간 요일별 루틴 표 */
+    /* 주간 요일별 루틴 표 */
     .table-container {
       overflow-x: auto;
       margin-top: 8px;
@@ -83,16 +82,9 @@
       border: 1px solid var(--border);
       -webkit-overflow-scrolling: touch;
     }
-    .table-container::-webkit-scrollbar {
-      height: 4px;
-    }
-    .table-container::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
     .week-table {
       width: 100%;
-      min-width: 440px; /* 좁은 모바일 화면에서도 칸이 찌그러지지 않는 최소 너비 */
+      min-width: 440px;
       border-collapse: collapse;
       font-size: 0.8rem;
       text-align: center;
@@ -111,9 +103,7 @@
       vertical-align: top;
       background: #fff;
     }
-    .week-table td:last-child {
-      border-right: none;
-    }
+    .week-table td:last-child { border-right: none; }
     .matrix-item {
       display: block;
       background: #f1f5f9;
@@ -123,11 +113,10 @@
       margin: 3px 0;
       font-size: 0.75rem;
       font-weight: 500;
-      white-space: nowrap; /* 👈 글자가 아래로 꺾여서 잘리는 현상 원천 차단 */
-      letter-spacing: -0.02em;
+      white-space: nowrap;
     }
 
-    /* 달성률 프로그레스 바 카드 */
+    /* 프로그레스 바 */
     .progress-box {
       background: linear-gradient(145deg, #ffffff, #f8fafc);
       border: 1px solid var(--border);
@@ -140,21 +129,9 @@
       align-items: flex-end;
       margin-bottom: 12px;
     }
-    .progress-label-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .progress-sub-text {
-      font-size: 0.78rem;
-      color: var(--sub);
-      font-weight: 500;
-    }
-    .progress-count-text {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--text);
-    }
+    .progress-label-wrap { display: flex; flex-direction: column; gap: 2px; }
+    .progress-sub-text { font-size: 0.78rem; color: var(--sub); font-weight: 500; }
+    .progress-count-text { font-size: 0.9rem; font-weight: 600; color: var(--text); }
     .progress-percent-badge {
       font-size: 1.45rem;
       font-weight: 800;
@@ -205,9 +182,7 @@
       cursor: pointer;
       user-select: none;
       background: #fff;
-      transition: all 0.2s ease;
     }
-    .todo-item:hover { border-color: #cbd5e1; }
     .todo-item.done { background: #f8fafc; opacity: 0.75; }
     .todo-item.done .todo-text { text-decoration: line-through; color: var(--sub); }
     .item-left { display: flex; align-items: center; gap: 10px; flex: 1; }
@@ -223,12 +198,8 @@
       color: #fff;
       font-weight: 700;
       flex-shrink: 0;
-      transition: all 0.2s;
     }
-    .todo-item.done .check-circle {
-      background: var(--primary);
-      border-color: var(--primary);
-    }
+    .todo-item.done .check-circle { background: var(--primary); border-color: var(--primary); }
     .time-badge {
       font-size: 0.72rem;
       color: var(--primary-dark);
@@ -246,7 +217,6 @@
       font-size: 1.2rem;
       cursor: pointer;
       padding: 0 4px;
-      line-height: 1;
     }
     .del-btn:hover { color: var(--danger); }
     .input-row { display: flex; gap: 8px; margin-top: 10px; }
@@ -270,7 +240,6 @@
       font-family: inherit;
       cursor: pointer;
       white-space: nowrap;
-      transition: background 0.2s;
     }
     .btn-action:hover { background: var(--primary-dark); }
     .day-selector { display: flex; gap: 4px; margin-bottom: 8px; }
@@ -315,81 +284,107 @@
       font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
-      font-family: inherit;
     }
-    .btn-del-sm:hover { background: #fecaca; }
 
     /* 플래너 타임테이블 */
-    .timetable-wrapper {
-      margin-top: 14px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #fff;
-      overflow: hidden;
+    .planner-card {
+      border: 1.5px solid #475569;
+      border-radius: 14px;
+      padding: 12px;
+      background: #fafaf9;
+      user-select: none;
     }
-    .timetable-row {
-      display: flex;
-      border-bottom: 1px solid var(--border-light);
-      min-height: 52px;
+    .planner-header {
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.12em;
+      color: #334155;
+      padding-bottom: 8px;
+      border-bottom: 1.5px solid #475569;
+      margin-bottom: 4px;
     }
-    .timetable-row:last-child { border-bottom: none; }
-    .time-axis {
-      width: 64px;
-      background: #f8fafc;
-      border-right: 1px solid var(--border);
+    .planner-grid {
       display: flex;
       flex-direction: column;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
+      background: #fff;
+      overflow: hidden;
+      touch-action: none; /* 모바일 드래그 시 화면 스크롤 방지 */
+    }
+    .planner-row {
+      display: flex;
+      height: 22px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .planner-row:last-child { border-bottom: none; }
+    .planner-hour {
+      width: 32px;
+      display: flex;
       align-items: center;
       justify-content: center;
       font-size: 0.75rem;
       font-weight: 700;
-      color: var(--sub);
-      flex-shrink: 0;
+      color: #475569;
+      border-right: 1.5px solid #94a3b8;
+      background: #f8fafc;
       user-select: none;
     }
-    .time-slots {
+    .planner-blocks {
       flex: 1;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      height: 100%;
+    }
+    .block-cell {
+      border-right: 1px dotted #cbd5e1;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.1s;
+    }
+    .block-cell:last-child { border-right: none; }
+    
+    /* 드래그 중인 임시 선택 표시 */
+    .block-cell.selecting {
+      background: #fde047 !important; /* 노란색 형광펜 하이라이트 */
+      opacity: 0.9;
+    }
+    /* 채워진 일정 블록 */
+    .block-cell.filled {
+      background: #93c5fd !important;
+      opacity: 0.85;
+    }
+    .block-cell.routine-filled {
+      background: #86efac !important;
+      opacity: 0.85;
+    }
+
+    /* 일정 목록 */
+    .events-summary-list {
+      list-style: none;
+      padding: 0;
+      margin: 14px 0 0;
       display: flex;
       flex-direction: column;
-    }
-    .slot-20 {
-      flex: 1;
-      min-height: 24px;
-      display: flex;
-      align-items: center;
-      padding: 2px 8px;
-      font-size: 0.78rem;
-      border-bottom: 1px dashed var(--border-light);
-      position: relative;
-      cursor: pointer;
-    }
-    .slot-20:last-child { border-bottom: none; }
-    .slot-20:hover { background-color: var(--slot-hover); }
-    .slot-min-label {
-      width: 28px;
-      font-size: 0.68rem;
-      color: #94a3b8;
-      font-weight: 600;
-      user-select: none;
-    }
-    .slot-entry-box {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
       gap: 6px;
-      background: #eff6ff;
-      border-left: 3px solid var(--primary);
-      padding: 3px 8px;
-      border-radius: 4px;
-      margin: 1px 0;
     }
-    .slot-entry-text {
-      color: var(--text);
-      font-weight: 500;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .event-summary-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+    }
+    .event-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
     }
 
     /* 캘린더 */
@@ -464,13 +459,11 @@
     
     <!-- 1. 할 일 탭 -->
     <div class="tab-view active" id="tabTodos">
-      <!-- 날짜 헤더 -->
       <div class="card top-date-card">
         <span class="today-main-date" id="todayHeader">오늘의 날짜</span>
         <span class="sync-badge" id="syncStatus">● 동기화 중</span>
       </div>
 
-      <!-- 주간 요일별 루틴 표 -->
       <div class="card">
         <div class="section-title">주간 요일별 루틴 표</div>
         <div class="table-container">
@@ -485,7 +478,6 @@
         </div>
       </div>
 
-      <!-- 오늘의 고정 루틴 -->
       <div class="card">
         <div class="section-title">
           <span>오늘의 고정 루틴</span>
@@ -494,7 +486,6 @@
         <ul class="todo-list" id="routineTodoList"></ul>
       </div>
 
-      <!-- 전체 달성률 -->
       <div class="card">
         <div class="progress-box">
           <div class="progress-meta">
@@ -510,7 +501,6 @@
         </div>
       </div>
 
-      <!-- 당일 해야 할 일 -->
       <div class="card">
         <div class="section-title">당일 해야 할 일</div>
         <ul class="todo-list" id="dailyTodoList"></ul>
@@ -521,21 +511,34 @@
       </div>
     </div>
 
-    <!-- 2. 오늘의 기록 탭 (플래너형 타임테이블) -->
+    <!-- 2. 오늘의 기록 탭 (플래너 다이어리 타임테이블) -->
     <div class="tab-view" id="tabRecord">
       <div class="card">
-        <div class="section-title">오늘의 타임테이블</div>
-        <span style="font-size: 0.82rem; color: var(--sub);">
-          체크 완료 시 20분 단위로 자동 배치되며, 빈 칸을 눌러 직접 기록할 수도 있습니다.
-        </span>
-        
-        <form class="input-row" id="addTimelineForm" style="margin-top: 14px;">
-          <input type="time" id="customTimeInput" required />
-          <input type="text" id="customActivityInput" placeholder="기록할 내용 입력..." autocomplete="off" required />
-          <button type="submit" class="btn-action">기록</button>
+        <div class="section-title">⏱️ 일정 직접 입력 (시작 ~ 종료)</div>
+        <form id="rangeScheduleForm" style="display: flex; flex-direction: column; gap: 8px;">
+          <input type="text" id="rangeTitle" placeholder="일정/활동 내용..." autocomplete="off" required />
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="time" id="rangeStart" style="flex:1;" required />
+            <span style="color:var(--sub);font-weight:bold;">~</span>
+            <input type="time" id="rangeEnd" style="flex:1;" required />
+            <button type="submit" class="btn-action">칠하기</button>
+          </div>
         </form>
+      </div>
 
-        <div class="timetable-wrapper" id="timetableGrid"></div>
+      <!-- 플래너 그리드 카드 -->
+      <div class="planner-card">
+        <div class="planner-header">TIMETABLE</div>
+        <div style="font-size:0.75rem; color:var(--sub); text-align:center; margin: 4px 0 8px;">
+          💡 칸을 터치하거나 아래로 <strong>드래그</strong>해서 시간대를 지정하세요.
+        </div>
+        <div class="planner-grid" id="plannerGrid"></div>
+      </div>
+
+      <!-- 등록된 일정 리스트 -->
+      <div class="card">
+        <div class="section-title">기록된 일정 목록</div>
+        <ul class="events-summary-list" id="eventsSummaryList"></ul>
       </div>
     </div>
 
@@ -553,7 +556,6 @@
 
     <!-- 4. 관리 탭 -->
     <div class="tab-view" id="tabManage">
-      <!-- 새 루틴 등록 -->
       <div class="card">
         <div class="section-title">새 요일별 루틴 등록</div>
         <div class="day-selector" id="daySelector">
@@ -572,7 +574,6 @@
         </form>
       </div>
 
-      <!-- 루틴 삭제/관리 -->
       <div class="card">
         <div class="section-title">등록된 루틴 관리</div>
         <span style="font-size: 0.82rem; color: var(--sub);">삭제 시 주간 표와 모든 요일 체크리스트에서 함께 제거됩니다.</span>
@@ -640,37 +641,17 @@
       return `${y}-${m}-${day}`;
     }
 
-    function getRoundedSlotKey(dateObj = new Date()) {
-      let hours = dateObj.getHours();
-      let minutes = dateObj.getMinutes();
-
-      let roundedMinutes = Math.round(minutes / 20) * 20;
-      if (roundedMinutes === 60) {
-        hours = (hours + 1) % 24;
-        roundedMinutes = 0;
-      }
-      return `${String(hours).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`;
-    }
-
-    function formatDisplayTime(slotKey) {
-      const [hStr, mStr] = slotKey.split(':');
-      let hours = parseInt(hStr);
-      const ampm = hours >= 12 ? '오후' : '오전';
-      const displayHour = hours % 12 === 0 ? 12 : hours % 12;
-      return `${ampm} ${displayHour}:${mStr}`;
-    }
-
     function ensureTodayData() {
       if (!historyRecords[todayKey]) {
         historyRecords[todayKey] = {
           routineDone: {},
           routineTimes: {},
           oneOffTasks: [],
-          timelineEvents: []
+          rangeEvents: []
         };
       }
       if (!historyRecords[todayKey].routineTimes) historyRecords[todayKey].routineTimes = {};
-      if (!historyRecords[todayKey].timelineEvents) historyRecords[todayKey].timelineEvents = [];
+      if (!historyRecords[todayKey].rangeEvents) historyRecords[todayKey].rangeEvents = [];
     }
 
     onSnapshot(docRef, (docSnap) => {
@@ -684,7 +665,7 @@
       renderToday();
       renderMatrix();
       renderTemplateList();
-      renderTimetableGrid();
+      renderPlannerGrid();
       renderCalendar();
     }, (error) => {
       console.error("Firebase Error: ", error);
@@ -716,7 +697,7 @@
       document.getElementById('navManage').classList.toggle('active', tab === 'manage');
 
       if (tab === 'todos') renderToday();
-      else if (tab === 'record') renderTimetableGrid();
+      else if (tab === 'record') renderPlannerGrid();
       else if (tab === 'cal') renderCalendar();
       else if (tab === 'manage') renderTemplateList();
     };
@@ -747,6 +728,217 @@
       });
     });
 
+    // 🌟 드래그 & 클릭 지원 플래너 타임테이블
+    let isDragging = false;
+    let dragStartMin = null;
+    let dragCurrentMin = null;
+
+    function renderPlannerGrid() {
+      ensureTodayData();
+      const grid = document.getElementById('plannerGrid');
+      grid.innerHTML = '';
+
+      const events = historyRecords[todayKey].rangeEvents || [];
+
+      for (let h = 1; h <= 24; h++) {
+        const row = document.createElement('div');
+        row.className = 'planner-row';
+
+        const hourLabel = document.createElement('div');
+        hourLabel.className = 'planner-hour';
+        hourLabel.textContent = h;
+        row.appendChild(hourLabel);
+
+        const blocksWrapper = document.createElement('div');
+        blocksWrapper.className = 'planner-blocks';
+
+        for (let b = 0; b < 6; b++) {
+          const blockStartMin = (h - 1) * 60 + b * 10;
+          const blockEndMin = blockStartMin + 10;
+
+          const cell = document.createElement('div');
+          cell.className = 'block-cell';
+          cell.dataset.startMin = blockStartMin;
+
+          const matchedEvent = events.find(ev => {
+            return Math.max(blockStartMin, ev.startMin) < Math.min(blockEndMin, ev.endMin);
+          });
+
+          if (matchedEvent) {
+            cell.classList.add(matchedEvent.type === 'routine' ? 'routine-filled' : 'filled');
+            cell.title = `${matchedEvent.title} (${minToTime(matchedEvent.startMin)} ~ ${minToTime(matchedEvent.endMin)})`;
+          }
+
+          // 마우스 이벤트 (PC)
+          cell.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startDrag(blockStartMin);
+          });
+          cell.addEventListener('mouseenter', () => {
+            if (isDragging) updateDrag(blockStartMin);
+          });
+
+          blocksWrapper.appendChild(cell);
+        }
+
+        row.appendChild(blocksWrapper);
+        grid.appendChild(row);
+      }
+
+      // 전역 드래그 종료 이벤트
+      window.onmouseup = () => {
+        if (isDragging) endDrag();
+      };
+
+      // 모바일 터치 이벤트 지원 (Touch Drag)
+      grid.ontouchstart = (e) => {
+        const touch = e.touches[0];
+        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (elem && elem.classList.contains('block-cell')) {
+          startDrag(parseInt(elem.dataset.startMin));
+        }
+      };
+
+      grid.ontouchmove = (e) => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (elem && elem.classList.contains('block-cell')) {
+          updateDrag(parseInt(elem.dataset.startMin));
+        }
+      };
+
+      grid.ontouchend = () => {
+        if (isDragging) endDrag();
+      };
+
+      renderSummaryList(events);
+    }
+
+    function startDrag(startMin) {
+      isDragging = true;
+      dragStartMin = startMin;
+      dragCurrentMin = startMin;
+      highlightDragSelection();
+    }
+
+    function updateDrag(currMin) {
+      dragCurrentMin = currMin;
+      highlightDragSelection();
+    }
+
+    function highlightDragSelection() {
+      const minStart = Math.min(dragStartMin, dragCurrentMin);
+      const maxEnd = Math.max(dragStartMin, dragCurrentMin) + 10;
+
+      document.querySelectorAll('.block-cell').forEach(cell => {
+        const cellMin = parseInt(cell.dataset.startMin);
+        if (cellMin >= minStart && cellMin < maxEnd) {
+          cell.classList.add('selecting');
+        } else {
+          cell.classList.remove('selecting');
+        }
+      });
+    }
+
+    function endDrag() {
+      isDragging = false;
+      document.querySelectorAll('.block-cell').forEach(cell => cell.classList.remove('selecting'));
+
+      const minStart = Math.min(dragStartMin, dragCurrentMin);
+      let maxEnd = Math.max(dragStartMin, dragCurrentMin) + 10;
+      
+      // 단일 클릭인 경우 기본 30분 구간으로 여유 있게 설정
+      if (minStart === dragCurrentMin && (maxEnd - minStart) === 10) {
+        maxEnd = Math.min(minStart + 30, 1440);
+      }
+
+      const sTime = minToTime(minStart);
+      const eTime = minToTime(maxEnd);
+
+      // 입력 폼에 시간 자동 채우기
+      document.getElementById('rangeStart').value = sTime;
+      document.getElementById('rangeEnd').value = eTime;
+
+      // 즉시 팝업 입력
+      setTimeout(() => {
+        const title = prompt(`[${sTime} ~ ${eTime}] 일정 내용을 입력하세요:`);
+        if (title && title.trim()) {
+          historyRecords[todayKey].rangeEvents.push({
+            id: 'drag_' + Date.now(),
+            title: title.trim(),
+            startMin: minStart,
+            endMin: maxEnd,
+            type: 'manual'
+          });
+          syncToFirebase();
+        }
+      }, 50);
+    }
+
+    function renderSummaryList(events) {
+      const summaryList = document.getElementById('eventsSummaryList');
+      summaryList.innerHTML = '';
+      if (events.length === 0) {
+        summaryList.innerHTML = `<li style="color:var(--sub);font-size:0.8rem;text-align:center;padding:8px 0;">기록된 일정이 없습니다.</li>`;
+      } else {
+        events.forEach(ev => {
+          const li = document.createElement('li');
+          li.className = 'event-summary-item';
+          const dotColor = ev.type === 'routine' ? '#22c55e' : '#3b82f6';
+          li.innerHTML = `
+            <div>
+              <span class="event-color-dot" style="background:${dotColor};"></span>
+              <strong>${ev.title}</strong>
+              <span style="color:var(--sub);margin-left:6px;font-size:0.75rem;">${minToTime(ev.startMin)} ~ ${minToTime(ev.endMin)}</span>
+            </div>
+            <button class="btn-del-sm" style="padding:2px 6px;">삭제</button>
+          `;
+          li.querySelector('.btn-del-sm').onclick = () => {
+            historyRecords[todayKey].rangeEvents = events.filter(item => item.id !== ev.id);
+            syncToFirebase();
+          };
+          summaryList.appendChild(li);
+        });
+      }
+    }
+
+    function timeToMin(timeStr) {
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
+    }
+    function minToTime(min) {
+      const h = Math.floor(min / 60) % 24;
+      const m = min % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    document.getElementById('rangeScheduleForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      ensureTodayData();
+
+      const title = document.getElementById('rangeTitle').value.trim();
+      const startStr = document.getElementById('rangeStart').value;
+      const endStr = document.getElementById('rangeEnd').value;
+
+      if (!title || !startStr || !endStr) return;
+
+      const startMin = timeToMin(startStr);
+      let endMin = timeToMin(endStr);
+      if (endMin <= startMin) endMin = startMin + 30;
+
+      historyRecords[todayKey].rangeEvents.push({
+        id: 'range_' + Date.now(),
+        title,
+        startMin,
+        endMin,
+        type: 'manual'
+      });
+
+      document.getElementById('rangeTitle').value = '';
+      syncToFirebase();
+    });
+
     function renderTemplateList() {
       const listEl = document.getElementById('templateList');
       listEl.innerHTML = '';
@@ -759,11 +951,7 @@
       routineTemplates.forEach(t => {
         const li = document.createElement('li');
         li.className = 'template-item';
-
-        const dayTag = t.days.includes('all') 
-          ? '매일' 
-          : t.days.map(d => DAY_NAMES[d]).join(', ');
-
+        const dayTag = t.days.includes('all') ? '매일' : t.days.map(d => DAY_NAMES[d]).join(', ');
         li.innerHTML = `
           <div>
             <strong>${t.text}</strong>
@@ -771,14 +959,12 @@
           </div>
           <button class="btn-del-sm">삭제</button>
         `;
-
         li.querySelector('.btn-del-sm').onclick = () => {
           if (confirm(`'${t.text}' 루틴을 삭제하시겠습니까?`)) {
             routineTemplates = routineTemplates.filter(item => item.id !== t.id);
             syncToFirebase();
           }
         };
-
         listEl.appendChild(li);
       });
     }
@@ -813,14 +999,17 @@
             const nextState = !isDone;
             record.routineDone[r.id] = nextState;
             if (nextState) {
-              const slotKey = getRoundedSlotKey();
-              const displayTime = formatDisplayTime(slotKey);
+              const now = new Date();
+              const currMin = now.getHours() * 60 + now.getMinutes();
+              const roundedMin = Math.round(currMin / 20) * 20;
+              const displayTime = minToTime(roundedMin);
               record.routineTimes[r.id] = displayTime;
-              record.timelineEvents.push({
+
+              record.rangeEvents.push({
                 id: 'rt_' + r.id + '_' + Date.now(),
-                slot: slotKey,
-                time: displayTime,
-                text: `[루틴] ${r.text}`,
+                title: `[루틴] ${r.text}`,
+                startMin: roundedMin,
+                endMin: roundedMin + 20,
                 type: 'routine'
               });
             } else {
@@ -851,14 +1040,17 @@
           li.querySelector('.item-left').onclick = () => {
             task.done = !task.done;
             if (task.done) {
-              const slotKey = getRoundedSlotKey();
-              task.time = formatDisplayTime(slotKey);
-              record.timelineEvents.push({
+              const now = new Date();
+              const currMin = now.getHours() * 60 + now.getMinutes();
+              const roundedMin = Math.round(currMin / 20) * 20;
+              task.time = minToTime(roundedMin);
+
+              record.rangeEvents.push({
                 id: 'task_' + task.id + '_' + Date.now(),
-                slot: slotKey,
-                time: task.time,
-                text: `[할일] ${task.text}`,
-                type: 'task'
+                title: `[할일] ${task.text}`,
+                startMin: roundedMin,
+                endMin: roundedMin + 20,
+                type: 'routine'
               });
             } else {
               task.time = null;
@@ -884,112 +1076,6 @@
       document.getElementById('rateLabel').textContent = `${rate}%`;
       document.getElementById('taskCountLabel').textContent = `${doneTotal} / ${totalItems} 완료`;
     }
-
-    function renderTimetableGrid() {
-      ensureTodayData();
-      const grid = document.getElementById('timetableGrid');
-      grid.innerHTML = '';
-
-      const events = historyRecords[todayKey].timelineEvents || [];
-
-      const hourOrder = [];
-      for (let h = 3; h <= 26; h++) {
-        hourOrder.push(h % 24);
-      }
-
-      hourOrder.forEach(hour => {
-        const row = document.createElement('div');
-        row.className = 'timetable-row';
-
-        const ampm = hour >= 12 ? 'pm' : 'am';
-        const displayH = hour % 12 === 0 ? 12 : hour % 12;
-        
-        const axis = document.createElement('div');
-        axis.className = 'time-axis';
-        axis.innerHTML = `<span>${displayH}</span><span style="font-size:0.65rem;font-weight:normal;">${ampm}</span>`;
-        row.appendChild(axis);
-
-        const slotsWrapper = document.createElement('div');
-        slotsWrapper.className = 'time-slots';
-
-        [0, 20, 40].forEach(min => {
-          const slotKey = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-          const slotDiv = document.createElement('div');
-          slotDiv.className = 'slot-20';
-
-          const minLabel = document.createElement('span');
-          minLabel.className = 'slot-min-label';
-          minLabel.textContent = `:${String(min).padStart(2, '0')}`;
-          slotDiv.appendChild(minLabel);
-
-          const matchedEvents = events.filter(e => e.slot === slotKey);
-
-          if (matchedEvents.length > 0) {
-            matchedEvents.forEach(ev => {
-              const entry = document.createElement('div');
-              entry.className = 'slot-entry-box';
-              entry.innerHTML = `
-                <span class="slot-entry-text">${ev.text}</span>
-                <button class="del-btn" style="font-size:0.9rem;" title="삭제">&times;</button>
-              `;
-              entry.querySelector('.del-btn').onclick = (e) => {
-                e.stopPropagation();
-                historyRecords[todayKey].timelineEvents = events.filter(item => item.id !== ev.id);
-                syncToFirebase();
-              };
-              slotDiv.appendChild(entry);
-            });
-          }
-
-          slotDiv.addEventListener('click', (e) => {
-            if (e.target.classList.contains('del-btn')) return;
-            const content = prompt(`${formatDisplayTime(slotKey)} 에 기록할 활동을 입력하세요:`);
-            if (content && content.trim()) {
-              historyRecords[todayKey].timelineEvents.push({
-                id: 'click_' + Date.now(),
-                slot: slotKey,
-                time: formatDisplayTime(slotKey),
-                text: content.trim(),
-                type: 'manual'
-              });
-              syncToFirebase();
-            }
-          });
-
-          slotsWrapper.appendChild(slotDiv);
-        });
-
-        row.appendChild(slotsWrapper);
-        grid.appendChild(row);
-      });
-    }
-
-    document.getElementById('addTimelineForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      ensureTodayData();
-      const timeInput = document.getElementById('customTimeInput');
-      const textInput = document.getElementById('customActivityInput');
-      if (!timeInput.value || !textInput.value.trim()) return;
-
-      const [h, m] = timeInput.value.split(':');
-      const tempDate = new Date();
-      tempDate.setHours(parseInt(h), parseInt(m), 0, 0);
-
-      const slotKey = getRoundedSlotKey(tempDate);
-      const displayTime = formatDisplayTime(slotKey);
-
-      historyRecords[todayKey].timelineEvents.push({
-        id: 'manual_' + Date.now(),
-        slot: slotKey,
-        time: displayTime,
-        text: textInput.value.trim(),
-        type: 'manual'
-      });
-
-      timeInput.value = '';
-      textInput.value = '';
-      syncToFirebase();
-    });
 
     function renderMatrix() {
       const tbody = document.getElementById('weekMatrixBody');
