@@ -286,15 +286,19 @@
       cursor: pointer;
     }
 
-    /* 플래너 타임테이블 */
+    /* 🌟 정사각형 격자 플래너 타임테이블 🌟 */
     .planner-card {
       border: 1.5px solid #475569;
       border-radius: 14px;
-      padding: 12px;
+      padding: 14px 12px;
       background: #fafaf9;
       user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center; /* 그리드 중앙 정렬 */
     }
     .planner-header {
+      width: 100%;
       text-align: center;
       font-weight: 800;
       font-size: 0.95rem;
@@ -302,25 +306,27 @@
       color: #334155;
       padding-bottom: 8px;
       border-bottom: 1.5px solid #475569;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
     .planner-grid {
+      width: 100%;
+      max-width: 340px; /* 정사각형 칸 비율에 최적화된 너비 */
       display: flex;
       flex-direction: column;
-      border: 1px solid #94a3b8;
-      border-radius: 6px;
+      border: 1.5px solid #94a3b8;
+      border-radius: 8px;
       background: #fff;
       overflow: hidden;
-      touch-action: none; /* 모바일 드래그 시 화면 스크롤 방지 */
+      touch-action: none;
     }
     .planner-row {
       display: flex;
-      height: 22px;
       border-bottom: 1px solid #e2e8f0;
+      align-items: stretch;
     }
     .planner-row:last-child { border-bottom: none; }
     .planner-hour {
-      width: 32px;
+      width: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -330,14 +336,15 @@
       border-right: 1.5px solid #94a3b8;
       background: #f8fafc;
       user-select: none;
+      flex-shrink: 0;
     }
     .planner-blocks {
       flex: 1;
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      height: 100%;
     }
     .block-cell {
+      aspect-ratio: 1 / 1; /* 👈 완전한 1:1 정사각형 칸 고정 */
       border-right: 1px dotted #cbd5e1;
       cursor: pointer;
       position: relative;
@@ -345,12 +352,12 @@
     }
     .block-cell:last-child { border-right: none; }
     
-    /* 드래그 중인 임시 선택 표시 */
+    /* 선택 중인 임시 하이라이트 */
     .block-cell.selecting {
-      background: #fde047 !important; /* 노란색 형광펜 하이라이트 */
+      background: #fde047 !important;
       opacity: 0.9;
     }
-    /* 채워진 일정 블록 */
+    /* 일정 블록 */
     .block-cell.filled {
       background: #93c5fd !important;
       opacity: 0.85;
@@ -360,7 +367,7 @@
       opacity: 0.85;
     }
 
-    /* 일정 목록 */
+    /* 일정 요약 목록 */
     .events-summary-list {
       list-style: none;
       padding: 0;
@@ -511,7 +518,7 @@
       </div>
     </div>
 
-    <!-- 2. 오늘의 기록 탭 (플래너 다이어리 타임테이블) -->
+    <!-- 2. 오늘의 기록 탭 (정사각형 격자 플래너 타임테이블) -->
     <div class="tab-view" id="tabRecord">
       <div class="card">
         <div class="section-title">⏱️ 일정 직접 입력 (시작 ~ 종료)</div>
@@ -526,16 +533,15 @@
         </form>
       </div>
 
-      <!-- 플래너 그리드 카드 -->
+      <!-- 정사각형 그리드 카드 -->
       <div class="planner-card">
         <div class="planner-header">TIMETABLE</div>
         <div style="font-size:0.75rem; color:var(--sub); text-align:center; margin: 4px 0 8px;">
-          💡 칸을 터치하거나 아래로 <strong>드래그</strong>해서 시간대를 지정하세요.
+          💡 1칸 = 10분 | 터치하거나 아래로 <strong>드래그</strong>하세요.
         </div>
         <div class="planner-grid" id="plannerGrid"></div>
       </div>
 
-      <!-- 등록된 일정 리스트 -->
       <div class="card">
         <div class="section-title">기록된 일정 목록</div>
         <ul class="events-summary-list" id="eventsSummaryList"></ul>
@@ -728,7 +734,7 @@
       });
     });
 
-    // 🌟 드래그 & 클릭 지원 플래너 타임테이블
+    // 드래그 & 클릭 지원 플래너 타임테이블
     let isDragging = false;
     let dragStartMin = null;
     let dragCurrentMin = null;
@@ -769,7 +775,6 @@
             cell.title = `${matchedEvent.title} (${minToTime(matchedEvent.startMin)} ~ ${minToTime(matchedEvent.endMin)})`;
           }
 
-          // 마우스 이벤트 (PC)
           cell.addEventListener('mousedown', (e) => {
             e.preventDefault();
             startDrag(blockStartMin);
@@ -785,12 +790,10 @@
         grid.appendChild(row);
       }
 
-      // 전역 드래그 종료 이벤트
       window.onmouseup = () => {
         if (isDragging) endDrag();
       };
 
-      // 모바일 터치 이벤트 지원 (Touch Drag)
       grid.ontouchstart = (e) => {
         const touch = e.touches[0];
         const elem = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -848,7 +851,6 @@
       const minStart = Math.min(dragStartMin, dragCurrentMin);
       let maxEnd = Math.max(dragStartMin, dragCurrentMin) + 10;
       
-      // 단일 클릭인 경우 기본 30분 구간으로 여유 있게 설정
       if (minStart === dragCurrentMin && (maxEnd - minStart) === 10) {
         maxEnd = Math.min(minStart + 30, 1440);
       }
@@ -856,11 +858,9 @@
       const sTime = minToTime(minStart);
       const eTime = minToTime(maxEnd);
 
-      // 입력 폼에 시간 자동 채우기
       document.getElementById('rangeStart').value = sTime;
       document.getElementById('rangeEnd').value = eTime;
 
-      // 즉시 팝업 입력
       setTimeout(() => {
         const title = prompt(`[${sTime} ~ ${eTime}] 일정 내용을 입력하세요:`);
         if (title && title.trim()) {
